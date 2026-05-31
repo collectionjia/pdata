@@ -480,8 +480,6 @@
 
     function isAuto90Enabled() {
       if (!autoBuy90) return false;
-      const el = $('auto90Enabled');
-      if (el) return el.checked;
       return localStorage.getItem('pm_5m_auto90') === '1';
     }
 
@@ -835,6 +833,10 @@
         const thr = (rules.markovThreshold ?? 0.87) * 100;
         parts.push(`马尔可夫 ≥${thr.toFixed(0)}%（按币种分别统计）`);
       }
+      if (intervalKey === '5M' && global.PMAiAssist?.isEnabled?.()) {
+        const aiCfg = global.PMAiAssist.loadConfig();
+        parts.push(`AI 虚拟辅助 ${aiCfg.mode === 'advise' ? '建议' : '拦截'}`);
+      }
       summary.textContent = parts.join(' · ');
       const autoSt = $('crypto5mAuto90Status');
       if (autoSt) {
@@ -854,10 +856,11 @@
     function syncAuto90ToggleUi() {
       if (!autoBuy90) return;
       const on = isAuto90Enabled();
-      const el = $('auto90Enabled');
-      if (el) el.checked = on;
-      const btn = $('auto90ToggleBtn');
-      if (btn) {
+      const chk = $('crypto5mAuto90Enabled');
+      if (chk) chk.checked = on;
+      for (const id of ['auto90ToggleBtn', 'crypto5mAuto90ToggleBtn']) {
+        const btn = $(id);
+        if (!btn) continue;
         btn.classList.toggle('on', on);
         btn.textContent = on ? '自动下单：开' : '自动下单：关';
       }
@@ -868,8 +871,6 @@
       if (!autoBuy90) return;
       const enabled = !!on;
       localStorage.setItem('pm_5m_auto90', enabled ? '1' : '0');
-      const el = $('auto90Enabled');
-      if (el) el.checked = enabled;
       syncAuto90ToggleUi();
     }
 
@@ -1980,6 +1981,190 @@
       };
     }
 
+    function isLosingVirtualBet(b) {
+      if (!b?.settled) return false;
+      if (b.result === '输' || b.result === '止损') return true;
+      if (b.profit != null && Number(b.profit) < -0.0001) return true;
+      return false;
+    }
+
+    function buildVirtualLossAuditPayload(limit = 40) {
+      const state = loadVirtualState();
+      const all = sortVirtualOrders(collectVirtualOrdersAll(state), true);
+      const settled = all.filter((b) => b.settled);
+      const losses = settled.filter(isLosingVirtualBet).slice(0, limit);
+      const wins = settled.filter((b) => b.result === '赢' || b.result === '止盈' || (b.profit != null && b.profit > 0));
+      const totalLossUsd = losses.reduce((s, b) => s + Math.abs(Number(b.profit) || 0), 0);
+      const totalWinUsd = wins.reduce((s, b) => s + Math.max(0, Number(b.profit) || 0), 0);
+
+      const bySide = { up: 0, down: 0 };
+      const byResult = {};
+      for (const b of losses) {
+        const side = (b.side || '').toLowerCase();
+        if (side === 'up' || side === 'down') bySide[side]++;
+        const r = b.result || '亏';
+        byResult[r] = (byResult[r] || 0) + 1;
+      }
+
+      return {
+        interval: intervalKey,
+        strategySummary: formatVirtualStrategySummary(),
+        strategy: getVirtualStrategyCfg(),
+        virtualRiskRules: {
+          tpSlEnabled: loadOrderRules().virtualTpSlEnabled !== false,
+          takeProfitPct: loadOrderRules().virtualTakeProfitPct ?? 5,
+          stopLossPct: loadOrderRules().virtualStopLossPct ?? 20,
+        },
+        stats: {
+          settledOrders: settled.length,
+          lossCount: losses.length,
+          winCount: wins.length,
+          winRatePct: settled.length ? Math.round((wins.length / settled.length) * 1000) / 10 : null,
+          totalLossUsd: Math.round(totalLossUsd * 100) / 100,
+          totalWinUsd: Math.round(totalWinUsd * 100) / 100,
+          netUsd: Math.round((totalWinUsd - totalLossUsd) * 100) / 100,
+          bankrollUsd: Math.round((state.bankroll || 0) * 100) / 100,
+          startBankrollUsd: state.startBankroll ?? null,
+          lossBySide: bySide,
+          lossByResult: byResult,
+        },
+        losingOrders: losses.map((b) => ({
+          title: (b.title || '').slice(0, 56),
+          side: (b.side || '').toUpperCase(),
+          result: b.result || '亏',
+          entryCents: b.entryPrice != null ? Math.round(b.entryPrice * 100) : null,
+          closeUpCents: b.closeUp != null ? Math.round(b.closeUp * 100) : null,
+          closeDownCents: b.closeDown != null ? Math.round(b.closeDown * 100) : null,
+          winner: b.winner || null,
+          profitUsd: b.profit != null ? Math.round(b.profit * 10000) / 10000 : null,
+          debitUsd: b.totalDebit ?? b.cost ?? null,
+          placedSlotRemSec: b.placedSlotRemSec ?? null,
+          placedSlotCountdown: b.placedSlotCountdown || null,
+          strategy: b.strategy || 'consensus90',
+          slotTs: b.slotTs ?? null,
+          settledAt: b.settledAt ? formatVirtualOrderCsvTime(b.settledAt) : null,
+          reversed:
+            b.winner && b.side
+              ? b.winner.toLowerCase() !== String(b.side).toLowerCase() && b.winner !== '平' && b.winner !== '—'
+              : null,
+        })),
+      };
+    }
+
+    function buildVirtualAiContext(analysis) {
+      const list = activeVirtualConsensusEvents();
+      const a = analysis || analyzeVirtualConsensus(list);
+      const cfg = getVirtualStrategyCfg();
+      const state = loadVirtualState();
+      const slot = getCurrentSlotTs();
+      const rules = loadOrderRules();
+      const amount = getVirtualOrderUsdc();
+      const usedKeys = virtualBetUsedKeysForSlot(slot, state);
+
+      function enrichEvent(ev) {
+        const upC = virtualPriceCents(ev.upPrice);
+        const downC = virtualPriceCents(ev.downPrice);
+        const coin = coinFromEventSlug(ev.slug);
+        const mk = estimateMarkovProbDetailed(ev);
+        const depth = (side) => {
+          const d = side === 'up' ? ev.upDepth : ev.downDepth;
+          if (!d) return null;
+          return {
+            bidSz: d.bidSize ?? d.bidSz ?? null,
+            askSz: d.askSize ?? d.askSz ?? null,
+            mid: d.mid ?? null,
+          };
+        };
+        return {
+          title: (ev.title || '').slice(0, 48),
+          slug: ev.slug || '',
+          coin: coin || '',
+          upCents: upC,
+          downCents: downC,
+          spreadCents: upC != null && downC != null ? Math.abs(upC - downC) : null,
+          volume24hUsd: ev.volume24hr || 0,
+          totalVolumeUsd: ev.volume || 0,
+          openInterestUsd: ev.openInterest || 0,
+          liquidityUsd: ev.liquidity || 0,
+          targetPriceUsd: ev.targetPrice ?? ev.gammaPriceToBeat ?? null,
+          spotPriceUsd: ev.currentPrice ?? ev.spotPrice ?? null,
+          priceDiffUsd: ev.priceDiff ?? null,
+          upDepth: depth('up'),
+          downDepth: depth('down'),
+          markov: {
+            probStay: mk.prob != null ? Math.round(mk.prob * 1000) / 1000 : null,
+            slots: mk.slots,
+            transitions: mk.transitions,
+            source: mk.source,
+            localLeader: eventLocalJStar(ev),
+          },
+          isBtc: isBtcEvent(ev),
+          tradable: isCurrentlyActive(ev),
+        };
+      }
+
+      const candidates = (a.candidates || []).map((pick) => {
+        const ev = pick.ev;
+        const evKey = String(ev.id);
+        const est = estimateVirtualBetSync(amount, pick.price);
+        return {
+          ...enrichEvent(ev),
+          betSide: pick.side,
+          entryCents: virtualPriceCents(pick.price),
+          strategy: pick.strategy || 'consensus90',
+          estDebitUsd: est?.totalDebit ?? null,
+          estShares: est?.shares ?? null,
+          alreadyPlacedThisSlot: usedKeys.has(virtualBetPlacementKey(slot, evKey, pick.side)),
+        };
+      });
+
+      const pendingSlot = (state.openBets || []).filter((b) => b.slotTs === slot && !b.settled);
+      const recentHistory = (state.history || []).slice(-5).map((b) => ({
+        result: b.result,
+        side: b.side,
+        title: (b.title || '').slice(0, 32),
+        profitUsd: b.profit,
+      }));
+
+      return {
+        slotTimestamp: slot,
+        slotRemainingSec: a.slotRemMs != null ? Math.round(a.slotRemMs / 1000) : null,
+        strategy: cfg,
+        strategySummary: formatVirtualStrategySummary(),
+        consensus: {
+          triggerSides: a.triggerSides || [],
+          triggerLabel: a.triggerSide || null,
+          activeMarketCount: a.activeN,
+          skipReason: a.skipReason || null,
+          weakened: a.weakened || [],
+          slotDivergence: !!a.slotDivergence,
+          upAtTriggerCents: countSideAtOrAboveCents(list, 'up', cfg.triggerCents),
+          downAtTriggerCents: countSideAtOrAboveCents(list, 'down', cfg.triggerCents),
+          upAtHoldCents: countSideAtOrAboveCents(list, 'up', cfg.holdMinCents),
+          downAtHoldCents: countSideAtOrAboveCents(list, 'down', cfg.holdMinCents),
+          candidateCount: (a.candidates || []).length,
+        },
+        globalMarkovLeader: currentBestState(),
+        virtualWallet: {
+          bankrollUsd: Math.round((state.bankroll || 0) * 100) / 100,
+          startBankrollUsd: state.startBankroll ?? null,
+          orderUsdcPerBet: amount,
+          openBetsTotal: (state.openBets || []).filter((b) => !b.settled).length,
+          pendingThisSlot: pendingSlot.length,
+          recentResults: recentHistory,
+        },
+        virtualRiskRules: {
+          tpSlEnabled: rules.virtualTpSlEnabled !== false,
+          takeProfitPct: rules.virtualTakeProfitPct ?? 5,
+          takeProfitPriceCents:
+            rules.virtualTakeProfitPrice != null ? Math.round(rules.virtualTakeProfitPrice * 100) : 98,
+          stopLossPct: rules.virtualStopLossPct ?? 20,
+        },
+        allMarkets: list.map(enrichEvent),
+        candidates,
+      };
+    }
+
     function buildVirtualConsensusDebug() {
       const list = activeVirtualConsensusEvents();
       const analysis = analyzeVirtualConsensus(list);
@@ -2424,10 +2609,68 @@
       }
     }
 
+    let virtualAiCacheSlot = null;
+    let virtualAiCacheResult = null;
+
+    async function maybeAiGateVirtualBet(analysis) {
+      if (intervalKey !== '5M') return true;
+      const ai = global.PMAiAssist;
+      if (!ai?.isEnabled?.()) return true;
+      if (!analysis?.candidates?.length) return true;
+
+      const slot = getCurrentSlotTs();
+      if (virtualAiCacheSlot === slot && virtualAiCacheResult) {
+        return applyVirtualAiResult(virtualAiCacheResult);
+      }
+
+      global.PMAiAssist?.setStatus?.('分析中…', '#2563eb');
+      try {
+        const list = activeVirtualConsensusEvents();
+        const result = await ai.analyzeVirtualBet(analysis, {
+          context: buildVirtualAiContext(analysis),
+        });
+        virtualAiCacheSlot = slot;
+        virtualAiCacheResult = result;
+        return applyVirtualAiResult(result);
+      } catch (e) {
+        console.warn('[virtual ai]', e);
+        global.PMTrade?.toast?.('AI 分析失败：' + (e.message || e), 'error', 10000);
+        global.PMAiAssist?.syncStatusEl?.();
+        return !ai.isGateMode?.();
+      }
+    }
+
+    function applyVirtualAiResult(result) {
+      const gate = global.PMAiAssist?.isGateMode?.() !== false;
+      const statusEl = document.getElementById('crypto5mAiStatus');
+      if (statusEl && result?.reason) {
+        const label = result.decision === 'bet' ? '建议投注' : '建议不投';
+        statusEl.textContent = `${label}：${result.reason}`;
+        statusEl.style.color = result.decision === 'bet' ? '#059669' : '#d97706';
+      }
+      if (result?.decision === 'skip') {
+        if (gate) {
+          toastVirtualConsensusSkip(
+            `AI 建议不投：${global.PMAiAssist?.formatDecisionToast?.(result) || result.reason}`,
+            `ai-skip-${getCurrentSlotTs()}`,
+          );
+          return false;
+        }
+        global.PMTrade?.toast?.(`AI 提示不投（仍将下单）：${result.reason}`, 'warn', 9000);
+        return true;
+      }
+      global.PMTrade?.toast?.(`AI 建议投注：${global.PMAiAssist?.formatDecisionToast?.(result) || result.reason || '通过'}`, 'info', 9000);
+      return true;
+    }
+
     async function runVirtualBet90(_isLateBuy = false) {
       if (!virtualBet || !isVirtualBetEnabled()) return;
       if (virtualBetBusy || loading) return;
       const analysis = analyzeVirtualConsensus();
+      if (analysis.candidates.length) {
+        const ok = await maybeAiGateVirtualBet(analysis);
+        if (!ok) return;
+      }
       await executeVirtualBetPlacements(analysis.candidates, {
         skipReason: analysis.skipReason,
         triggerLabel: analysis.triggerSide || 'consensus',
@@ -3513,6 +3756,7 @@
     if (autoBuy90) {
       api.toggleAuto90 = toggleAuto90;
       api.setAuto90Enabled = setAuto90Enabled;
+      api.syncAuto90ToggleUi = syncAuto90ToggleUi;
       api.getOrderRules = loadOrderRules;
       api.saveOrderRules = saveOrderRules;
       api.getMergedRuleCfg = () => getMergedRuleCfg(autoBuy90);
@@ -3565,6 +3809,9 @@
       api.buildVirtualOrdersCsv = buildVirtualOrdersCsv;
       api.downloadVirtualOrdersCsv = downloadVirtualOrdersCsv;
       api.buildVirtualBankrollSeries = buildVirtualBankrollSeries;
+      api.getVirtualStrategySummary = () => formatVirtualStrategySummary();
+      api.buildVirtualAiContext = buildVirtualAiContext;
+      api.buildVirtualLossAuditPayload = buildVirtualLossAuditPayload;
     }
 
     function clearLocalCache() {
@@ -3573,7 +3820,7 @@
         `· ${intervalNum} 分钟虚拟投注与开关`,
         '· 自动下单与下单规则',
       ];
-      if (intervalKey === '5M') lines.push('· 马尔可夫历史');
+      if (intervalKey === '5M') lines.push('· 马尔可夫历史 · AI 配置');
       if (
         !global.confirm(
           `将清除本页所有本地缓存并刷新页面：\n\n${lines.join('\n')}\n\n此操作不可恢复，是否继续？`,
@@ -3587,6 +3834,7 @@
       localStorage.removeItem(ORDER_RULES_STORAGE_KEY);
       localStorage.removeItem(`${storagePrefix}_auto90`);
       if (intervalKey === '5M') localStorage.removeItem(MARKOV_HISTORY_KEY);
+      if (intervalKey === '5M') localStorage.removeItem('pm_5m_ai_assist');
       global.location.reload();
     }
     api.clearLocalCache = clearLocalCache;

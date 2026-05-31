@@ -1018,6 +1018,18 @@ td.num.stat-tick{background:rgba(37,99,235,.06);transition:background-color .35s
 .wp-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .btn-cache-clear{border-color:#fecaca;background:#fef2f2;color:#b91c1c}
 .btn-cache-clear:hover{background:#fee2e2}
+.ai-config-row{align-items:center}
+.ai-config-input{flex:1;min-width:0;font-size:12px}
+.ai-config-actions{margin-top:4px}
+.btn-ai{border-color:#c4b5fd;background:#f5f3ff;color:#5b21b6;font-weight:600}
+.btn-ai:hover{background:#ede9fe}
+.btn-ai-audit{border-color:#fca5a5;background:#fef2f2;color:#b91c1c;font-weight:600}
+.btn-ai-audit:hover{background:#fee2e2}
+.ai-audit-result{margin-top:10px;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:11px;line-height:1.5;color:#374151;max-height:220px;overflow-y:auto}
+.ai-audit-result .ai-audit-summary p{margin:6px 0 0}
+.ai-audit-result .ai-audit-block{margin-top:10px}
+.ai-audit-result ul{margin:4px 0 0;padding-left:18px}
+.ai-audit-result li{margin:2px 0}
 .wp-addr{font-family:monospace;font-size:11px;background:#f3f4f6;padding:3px 8px;border-radius:4px}
 .sel-checkbox{width:16px;height:16px;cursor:pointer}
 .batch-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:200;box-shadow:0 -4px 16px rgba(0,0,0,.08);transform:translateY(100%);transition:transform .25s}
@@ -1044,9 +1056,23 @@ td.num.stat-tick{background:rgba(37,99,235,.06);transition:background-color .35s
 .auto-fab.busy{opacity:.7;animation:autoPulse 1s infinite}
 @keyframes autoPulse{0%,100%{opacity:.7}50%{opacity:1}}
 .auto-panel{position:fixed;right:20px;bottom:150px;width:min(400px,calc(100vw - 40px));max-height:min(85vh,640px);overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.15);z-index:259;padding:14px 16px;display:none}
+.auto-panel.open:not(.auto-panel--crypto5m-only){display:block}
+.auto-panel.auto-panel--crypto5m-only.open{display:flex;flex-direction:column;overflow:hidden;padding:14px 16px 0}
+.auto-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;flex-shrink:0}
+.auto-tab{flex:1;min-width:calc(50% - 2px);padding:7px 6px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;font-size:11px;font-weight:500;cursor:pointer;color:#6b7280;line-height:1.2;transition:background .15s,border-color .15s,color .15s}
+.auto-tab:hover{background:#f3f4f6;color:#374151}
+.auto-tab.on{background:#eef2ff;border-color:#c7d2fe;color:#4338ca;font-weight:600}
+.auto-tab-body{flex:1 1 auto;min-height:180px;max-height:min(48vh,400px);overflow-y:auto;padding-right:2px;margin-bottom:4px;-webkit-overflow-scrolling:touch}
+.auto-tab-panel{display:none}
+.auto-tab-panel.on{display:block}
+.auto-panel-footer{flex-shrink:0;padding:10px 0 14px;border-top:1px solid #e5e7eb;background:#fff}
+.crypto5m-rules-section{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%}
 .auto-section-title{font-size:12px;font-weight:600;color:#374151;margin:12px 0 6px;padding-top:10px;border-top:1px solid #e5e7eb}
-.auto-panel.open{display:block}
-.auto-panel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.auto-panel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0}
+[data-page="crypto5m"] .panel-hd{align-items:flex-start}
+[data-page="crypto5m"] .panel-hd-right{flex:1 1 100%;max-width:100%;justify-content:flex-end;row-gap:8px}
+[data-page="crypto5m"] .panel-hd-right .btn-auto90,[data-page="crypto5m"] .panel-hd-right .btn-virtual{flex-shrink:0}
+.auto-tab-auto-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
 .auto-hint{font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:12px}
 .auto-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .auto-lbl{font-size:11px;color:#6b7280;white-space:nowrap}

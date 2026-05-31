@@ -784,8 +784,9 @@
     };
     saveCrypto5mRules(rules);
     if (global.Crypto5M?.saveOrderRules) global.Crypto5M.saveOrderRules(rules);
+    global.PMAiAssist?.saveFromForm?.();
     if (global.Crypto5M?.setAuto90Enabled) {
-      global.Crypto5M.setAuto90Enabled(!!$('auto90Enabled')?.checked);
+      global.Crypto5M.setAuto90Enabled(!!$('crypto5mAuto90Enabled')?.checked);
     }
     global.Crypto5M?.applyOrderUsdcProfile?.(orderUsdc);
     updateFabState();
@@ -799,7 +800,9 @@
     if ($('orderAmtInput')) $('orderAmtInput').value = String(usdc);
     if ($('crypto5mMinCents')) $('crypto5mMinCents').value = rules.minCents ?? 90;
     if ($('crypto5mMaxCents')) $('crypto5mMaxCents').value = rules.maxCents ?? 95;
-    if ($('auto90Enabled')) $('auto90Enabled').checked = localStorage.getItem('pm_5m_auto90') === '1';
+    if ($('crypto5mAuto90Enabled')) {
+      $('crypto5mAuto90Enabled').checked = localStorage.getItem('pm_5m_auto90') === '1';
+    }
     if ($('crypto5mEarlyBuy')) $('crypto5mEarlyBuy').checked = rules.earlyBuyEnabled === true;
     if ($('crypto5mLateBuy')) $('crypto5mLateBuy').checked = rules.lateBuyEnabled === true;
     if ($('crypto5mLateBuySec')) $('crypto5mLateBuySec').value = rules.lateBuySec ?? 40;
@@ -822,7 +825,32 @@
     syncMarkovStatus();
     global.Crypto5M?.syncScheduleRulesSummary?.();
     syncCrypto5mTpSlStatus();
+    global.PMAiAssist?.syncForm?.();
     updateFabState();
+  }
+
+  const CRYPTO5M_TAB_KEY = 'pm_5m_auto_tab';
+
+  function switchCrypto5mTab(tabId) {
+    const id = tabId || 'auto';
+    document.querySelectorAll('#crypto5mRulesSection .auto-tab').forEach((btn) => {
+      btn.classList.toggle('on', btn.dataset.tab === id);
+    });
+    document.querySelectorAll('#crypto5mRulesSection .auto-tab-panel').forEach((panel) => {
+      panel.classList.toggle('on', panel.dataset.tabPanel === id);
+    });
+    try {
+      sessionStorage.setItem(CRYPTO5M_TAB_KEY, id);
+    } catch (_) {}
+  }
+
+  function restoreCrypto5mTab() {
+    let tab = 'auto';
+    try {
+      tab = sessionStorage.getItem(CRYPTO5M_TAB_KEY) || 'auto';
+    } catch (_) {}
+    if (!document.querySelector(`#crypto5mRulesSection .auto-tab[data-tab="${tab}"]`)) tab = 'auto';
+    switchCrypto5mTab(tab);
   }
 
   function mountCrypto5mSection() {
@@ -833,98 +861,159 @@
     section.id = 'crypto5mRulesSection';
     section.className = 'crypto5m-rules-section';
     section.innerHTML = `
-      <p class="auto-hint" style="margin-top:0">当前 5 分钟槽 · 非 BTC · 价格在区间内才自动下单。修改后点<strong>保存设置</strong>生效；须保持本页打开。</p>
-      <div class="auto-section-title" style="margin-top:0;padding-top:0;border-top:none">自动下单</div>
-      <label class="auto-row"><input type="checkbox" id="auto90Enabled"> 启用 5M 自动下单（CLOB 市价 FOK）</label>
-      <div class="auto-row">
-        <span class="auto-lbl">每单</span>
-        <input type="number" id="crypto5mOrderUsdc" class="filter-input" value="1" min="0.1" step="0.1" style="width:72px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">USDC</span>
+      <div class="auto-tabs" role="tablist" aria-label="定时调度">
+        <button type="button" class="auto-tab on" data-tab="auto" role="tab" aria-selected="true" onclick="PMAuto.switchCrypto5mTab('auto')">自动下单</button>
+        <button type="button" class="auto-tab" data-tab="virtual" role="tab" aria-selected="false" onclick="PMAuto.switchCrypto5mTab('virtual')">虚拟投注</button>
+        <button type="button" class="auto-tab" data-tab="ai" role="tab" aria-selected="false" onclick="PMAuto.switchCrypto5mTab('ai')">AI 辅助</button>
+        <button type="button" class="auto-tab" data-tab="live" role="tab" aria-selected="false" onclick="PMAuto.switchCrypto5mTab('live')">实盘风控</button>
       </div>
-      <div class="auto-row">
-        <span class="auto-lbl">价格</span>
-        <span class="auto-lbl">&gt;</span>
-        <input type="number" id="crypto5mMinCents" class="filter-input" value="90" min="1" max="98" style="width:64px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">¢ 且 &lt;</span>
-        <input type="number" id="crypto5mMaxCents" class="filter-input" value="95" min="2" max="99" style="width:64px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">¢</span>
+      <div class="auto-tab-body">
+        <div class="auto-tab-panel on" data-tab-panel="auto" role="tabpanel">
+          <div class="auto-tab-auto-actions">
+            <button type="button" class="btn btn-auto90" id="crypto5mAuto90ToggleBtn" onclick="Crypto5M.toggleAuto90()">自动下单：关</button>
+            <label class="auto-row" style="margin:0"><input type="checkbox" id="crypto5mAuto90Enabled"> 启用 5M 自动下单（CLOB 市价 FOK）</label>
+          </div>
+          <p class="auto-hint" style="margin-top:0">当前 5 分钟槽 · 非 BTC · 价格在区间内才自动下单。修改后点<strong>保存设置</strong>生效；须保持本页打开。</p>
+          <div class="auto-row">
+            <span class="auto-lbl">每单</span>
+            <input type="number" id="crypto5mOrderUsdc" class="filter-input" value="1" min="0.1" step="0.1" style="width:72px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">USDC</span>
+          </div>
+          <div class="auto-row">
+            <span class="auto-lbl">价格</span>
+            <span class="auto-lbl">&gt;</span>
+            <input type="number" id="crypto5mMinCents" class="filter-input" value="90" min="1" max="98" style="width:64px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">¢ 且 &lt;</span>
+            <input type="number" id="crypto5mMaxCents" class="filter-input" value="95" min="2" max="99" style="width:64px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">¢</span>
+          </div>
+          <div class="auto-section-title">买入时间</div>
+          <label class="auto-row"><input type="checkbox" id="crypto5mEarlyBuy"> 槽内盘口刷新时可买（每槽首单）</label>
+          <label class="auto-row"><input type="checkbox" id="crypto5mLateBuy"> 结束前再买一单</label>
+          <div class="auto-row">
+            <span class="auto-lbl">结束前</span>
+            <input type="number" id="crypto5mLateBuySec" class="filter-input" value="40" min="5" max="280" style="width:52px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">秒触发（±2s）</span>
+          </div>
+          <label class="auto-row"><input type="checkbox" id="crypto5mOnlyBeforeEnd"> 仅在结束前买入（关闭盘中自动买）</label>
+          <div class="auto-section-title">马尔可夫链策略过滤</div>
+          <p class="auto-hint" style="margin-top:0">按<strong>每个市场行</strong>（slug）独立统计 P%。≥3 槽为正式值，2 槽显示初估 <strong>†</strong>（暂不过滤）。仅过滤<strong>实盘</strong>自动下单。</p>
+          <label class="auto-row"><input type="checkbox" id="crypto5mMarkovEnabled"> 启用马尔可夫策略过滤</label>
+          <div class="auto-row">
+            <span class="auto-lbl">持续概率阈值 ≥</span>
+            <input type="number" id="crypto5mMarkovThreshold" class="filter-input" value="0.87" min="0.5" max="0.99" step="0.01" style="width:64px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">（0.50–0.99）</span>
+          </div>
+          <div class="auto-row" style="margin:0">
+            <span class="auto-lbl">当前估计</span>
+            <span id="crypto5mMarkovStatus" style="font-size:11px;color:#6b7280;flex:1">—</span>
+          </div>
+        </div>
+        <div class="auto-tab-panel" data-tab-panel="virtual" role="tabpanel">
+          <div class="auto-section-title" style="margin-top:0;padding-top:0;border-top:none">虚拟投注止盈 / 止损</div>
+          <p class="auto-hint" style="margin-top:0">待结算虚拟单按盘口中间价估算浮动%；<strong>市价 ≥ 设定¢</strong>（默认 98¢）或浮动%达止盈即平仓（每约 5 秒检查）。</p>
+          <label class="auto-row"><input type="checkbox" id="crypto5mVirtualTpSlEnabled" checked> 启用虚拟止盈止损</label>
+          <div class="auto-row">
+            <span class="auto-lbl">止盈</span>
+            <input type="number" id="crypto5mVirtualTakeProfit" class="filter-input" value="5" min="0.1" max="500" step="0.1" style="width:52px"> %
+            <span class="auto-lbl">或 ≥</span>
+            <input type="number" id="crypto5mVirtualTakeProfitPrice" class="filter-input" value="98" min="50" max="99" step="1" style="width:52px"> ¢
+          </div>
+          <div class="auto-row">
+            <span class="auto-lbl">止损</span>
+            <input type="number" id="crypto5mVirtualStopLoss" class="filter-input" value="20" min="0.1" max="99" step="0.1" style="width:52px"> %
+          </div>
+          <div class="auto-row">
+            <span class="auto-lbl">虚拟下单价格</span>
+            <input type="number" id="crypto5mVirtualOrderPriceCents" class="filter-input" placeholder="留空=盘口" min="1" max="99" step="1" style="width:72px;font-size:14px;padding:4px 8px">
+            <span class="auto-lbl">¢</span>
+          </div>
+          <p class="auto-hint" style="margin-top:0">共识90 虚拟单始终按<strong>表格盘口价</strong>判断与成交；右上角「虚拟投注」开关控制是否模拟下单。</p>
+        </div>
+        <div class="auto-tab-panel" data-tab-panel="ai" role="tabpanel">
+          <div class="auto-section-title" style="margin-top:0;padding-top:0;border-top:none">AI 辅助分析（虚拟投注）</div>
+          <p class="auto-hint" style="margin-top:0">共识触发拟下单前，AI 将读取<strong>全槽盘口、成交量/OI、马尔可夫、共识计数、余额与风控参数</strong>等综合判断是否投。Key 存浏览器，经本地服务转发。</p>
+          <label class="auto-row"><input type="checkbox" id="crypto5mAiEnabled"> 启用 AI 辅助（虚拟投注）</label>
+          <div class="auto-row ai-config-row">
+            <span class="auto-lbl">API URL</span>
+            <input type="url" id="crypto5mAiApiUrl" class="wp-input ai-config-input" placeholder="https://api.openai.com/v1" autocomplete="off">
+          </div>
+          <div class="auto-row ai-config-row">
+            <span class="auto-lbl">API Key</span>
+            <input type="password" id="crypto5mAiApiKey" class="wp-input ai-config-input" placeholder="sk-..." autocomplete="off">
+          </div>
+          <div class="auto-row ai-config-row">
+            <span class="auto-lbl">模型</span>
+            <input type="text" id="crypto5mAiModel" class="wp-input ai-config-input" placeholder="gpt-4o-mini" autocomplete="off">
+          </div>
+          <div class="auto-row">
+            <span class="auto-lbl">模式</span>
+            <select id="crypto5mAiMode" class="sort-select" style="flex:1">
+              <option value="gate">拦截：AI 说不投则本槽不下虚拟单</option>
+              <option value="advise">建议：仅提示，仍按共识策略下单</option>
+            </select>
+          </div>
+          <div class="auto-row" style="margin:0">
+            <span class="auto-lbl">AI 状态</span>
+            <span id="crypto5mAiStatus" style="font-size:11px;color:#6b7280;flex:1;line-height:1.35">—</span>
+          </div>
+          <div class="auto-actions ai-config-actions" style="border-top:none;padding-top:8px;margin-top:4px">
+            <button type="button" class="btn" onclick="PMAiAssist.testConnection()">测试连接</button>
+            <button type="button" class="btn btn-ai" onclick="PMAiAssist.analyzeNow()">立即 AI 分析</button>
+            <button type="button" class="btn btn-ai-audit" onclick="PMAiAssist.auditLosingOrders()">审计亏损订单</button>
+          </div>
+          <div id="crypto5mAiAuditResult" class="ai-audit-result" hidden></div>
+        </div>
+        <div class="auto-tab-panel" data-tab-panel="live" role="tabpanel">
+          <div class="auto-section-title" style="margin-top:0;padding-top:0;border-top:none">实盘止盈 / 止损</div>
+          <p class="auto-hint" style="margin-top:0">真实持仓按 Data API 浮动盈亏% 每 30 秒检查；触发后市价 FOK 全仓卖出。</p>
+          <label class="auto-row"><input type="checkbox" id="crypto5mTpSlEnabled"> 启用实盘止盈止损</label>
+          <div class="auto-row">
+            <span class="auto-lbl">止盈</span>
+            <input type="number" id="crypto5mTakeProfit" class="filter-input" value="25" min="1" max="500" step="1" style="width:52px"> %
+            <span class="auto-lbl">止损</span>
+            <input type="number" id="crypto5mStopLoss" class="filter-input" value="15" min="1" max="99" step="1" style="width:52px"> %
+          </div>
+          <div class="auto-row">
+            <span class="auto-lbl">监控</span>
+            <select id="crypto5mTpSlScope" class="sort-select" style="flex:1">
+              <option value="auto">仅自动买入的仓位</option>
+              <option value="all" selected>全部持仓</option>
+            </select>
+          </div>
+          <div class="auto-row" style="margin:0">
+            <span class="auto-lbl">实盘状态</span>
+            <span id="crypto5mTpSlStatus" style="font-size:11px;color:#6b7280;flex:1">—</span>
+          </div>
+        </div>
       </div>
-      <div class="auto-section-title">买入时间</div>
-      <label class="auto-row"><input type="checkbox" id="crypto5mEarlyBuy"> 槽内盘口刷新时可买（每槽首单）</label>
-      <label class="auto-row"><input type="checkbox" id="crypto5mLateBuy"> 结束前再买一单</label>
-      <div class="auto-row">
-        <span class="auto-lbl">结束前</span>
-        <input type="number" id="crypto5mLateBuySec" class="filter-input" value="40" min="5" max="280" style="width:52px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">秒触发（±2s）</span>
-      </div>
-      <label class="auto-row"><input type="checkbox" id="crypto5mOnlyBeforeEnd"> 仅在结束前买入（关闭盘中自动买）</label>
-      <div class="auto-section-title">实盘止盈 / 止损</div>
-      <p class="auto-hint" style="margin-top:0">真实持仓按 Data API 浮动盈亏% 每 30 秒检查；触发后市价 FOK 全仓卖出。</p>
-      <label class="auto-row"><input type="checkbox" id="crypto5mTpSlEnabled"> 启用实盘止盈止损</label>
-      <div class="auto-row">
-        <span class="auto-lbl">止盈</span>
-        <input type="number" id="crypto5mTakeProfit" class="filter-input" value="25" min="1" max="500" step="1" style="width:52px"> %
-        <span class="auto-lbl">止损</span>
-        <input type="number" id="crypto5mStopLoss" class="filter-input" value="15" min="1" max="99" step="1" style="width:52px"> %
-      </div>
-      <div class="auto-row">
-        <span class="auto-lbl">监控</span>
-        <select id="crypto5mTpSlScope" class="sort-select" style="flex:1">
-          <option value="auto">仅自动买入的仓位</option>
-          <option value="all" selected>全部持仓</option>
-        </select>
-      </div>
-      <div class="auto-row" style="margin:0">
-        <span class="auto-lbl">实盘状态</span>
-        <span id="crypto5mTpSlStatus" style="font-size:11px;color:#6b7280;flex:1">—</span>
-      </div>
-      <div class="auto-section-title">虚拟投注止盈 / 止损</div>
-      <p class="auto-hint" style="margin-top:0">待结算虚拟单按盘口中间价估算浮动%；<strong>市价 ≥ 设定¢</strong>（默认 98¢）或浮动%达止盈即平仓（每约 5 秒检查）。</p>
-      <label class="auto-row"><input type="checkbox" id="crypto5mVirtualTpSlEnabled" checked> 启用虚拟止盈止损</label>
-      <div class="auto-row">
-        <span class="auto-lbl">止盈</span>
-        <input type="number" id="crypto5mVirtualTakeProfit" class="filter-input" value="5" min="0.1" max="500" step="0.1" style="width:52px"> %
-        <span class="auto-lbl">或 ≥</span>
-        <input type="number" id="crypto5mVirtualTakeProfitPrice" class="filter-input" value="98" min="50" max="99" step="1" style="width:52px"> ¢
-      </div>
-      <div class="auto-row">
-        <span class="auto-lbl">止损</span>
-        <input type="number" id="crypto5mVirtualStopLoss" class="filter-input" value="20" min="0.1" max="99" step="0.1" style="width:52px"> %
-      </div>
-      <div class="auto-row">
-        <span class="auto-lbl">虚拟下单价格</span>
-        <input type="number" id="crypto5mVirtualOrderPriceCents" class="filter-input" placeholder="留空=盘口" min="1" max="99" step="1" style="width:72px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">¢</span>
-      </div>
-      <p class="auto-hint" style="margin-top:0">共识90 虚拟单始终按<strong>表格盘口价</strong>判断与成交；此项填了数字也不影响共识策略。</p>
-      <div class="auto-section-title">马尔可夫链策略过滤</div>
-      <p class="auto-hint" style="margin-top:0">按<strong>每个市场行</strong>（slug）独立统计 P%，不再全表共用一个合并值。每槽结束 +1；≥3 槽为正式值，2 槽显示初估 <strong>†</strong>（暂不过滤）。虚拟单<strong>止盈</strong>后，同槽同市场同方向再次出现 ✓ 可再次模拟下单（止损不重复开）。</p>
-      <label class="auto-row"><input type="checkbox" id="crypto5mMarkovEnabled"> 启用马尔可夫策略过滤（仅实盘自动下单）</label>
-      <div class="auto-row">
-        <span class="auto-lbl">持续概率阈值 ≥</span>
-        <input type="number" id="crypto5mMarkovThreshold" class="filter-input" value="0.87" min="0.5" max="0.99" step="0.01" style="width:64px;font-size:14px;padding:4px 8px">
-        <span class="auto-lbl">（0.50–0.99）</span>
-      </div>
-      <div class="auto-row" style="margin:0">
-        <span class="auto-lbl">当前估计</span>
-        <span id="crypto5mMarkovStatus" style="font-size:11px;color:#6b7280;flex:1">—</span>
-      </div>
-      <div id="crypto5mRulesSummary" class="auto-filter-box">—</div>
-      <div class="auto-row" style="margin:0">
-        <span class="auto-lbl">自动下单</span>
-        <span id="crypto5mAuto90Status" class="crypto5m-rule-status">—</span>
-      </div>
-      <div class="auto-actions">
-        <button type="button" class="btn btn-primary" onclick="PMAuto.save()">保存设置</button>
-        <button type="button" class="btn" onclick="PMAuto.checkCrypto5mTpSlNow()">检查实盘止盈止损</button>
-        <button type="button" class="btn" onclick="Crypto5M.checkVirtualTpSl()">检查虚拟止盈止损</button>
+      <div class="auto-panel-footer">
+        <div id="crypto5mRulesSummary" class="auto-filter-box">—</div>
+        <div class="auto-row" style="margin:8px 0 0">
+          <span class="auto-lbl">自动下单</span>
+          <span id="crypto5mAuto90Status" class="crypto5m-rule-status">—</span>
+        </div>
+        <div class="auto-actions" style="margin-top:10px;padding-top:10px">
+          <button type="button" class="btn btn-primary" onclick="PMAuto.save()">保存设置</button>
+          <button type="button" class="btn" onclick="PMAuto.checkCrypto5mTpSlNow()">检查实盘止盈止损</button>
+          <button type="button" class="btn" onclick="Crypto5M.checkVirtualTpSl()">检查虚拟止盈止损</button>
+        </div>
       </div>
     `;
     const hd = panel.querySelector('.auto-panel-hd');
     if (hd) hd.insertAdjacentElement('afterend', section);
     else panel.appendChild(section);
 
+    restoreCrypto5mTab();
     syncCrypto5mFormFromStorage();
+    const autoChk = $('crypto5mAuto90Enabled');
+    if (autoChk && !autoChk._pm5mBound) {
+      autoChk._pm5mBound = true;
+      autoChk.addEventListener('change', () => {
+        global.Crypto5M?.setAuto90Enabled?.(autoChk.checked);
+      });
+    }
+    global.Crypto5M?.syncAuto90ToggleUi?.();
   }
 
   function buildUI() {
@@ -1087,6 +1176,7 @@
     checkTpSlNow: () => runTpSlCheck(),
     checkCrypto5mTpSlNow: () => runCrypto5mTpSlCheck(),
     registerCrypto5mBought,
+    switchCrypto5mTab,
     mountCrypto5mSection,
     syncCrypto5mFormFromStorage,
     updateFabState,

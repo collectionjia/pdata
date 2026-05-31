@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>加密 5分钟 · Polymarket</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-<link rel="stylesheet" href="polymarket-markets-shared.css?v=20260606d">
+<link rel="stylesheet" href="polymarket-markets-shared.css?v=20260607c">
 </head>
 <body data-page="crypto5m">
 
@@ -175,7 +175,6 @@
         <button class="btn btn-virtual" id="virtualBetToggleBtn" type="button" onclick="Crypto5M.toggleVirtualBet()" title="共识90虚拟模拟（≥2个90¢同边；70–98¢各$5）">虚拟投注：关</button>
         <input type="checkbox" id="virtualBetEnabled" hidden aria-hidden="true">
         <button class="btn btn-auto90" id="auto90ToggleBtn" type="button" onclick="Crypto5M.toggleAuto90()" title="非 BTC：90¢＜Up/Down＜95¢ 时随机自动买 $1，否则跳过">自动下单：关</button>
-        <input type="checkbox" id="auto90Enabled" hidden aria-hidden="true">
         <span id="resultLabel">Loading...</span>
       </div>
     </div>
@@ -184,6 +183,7 @@
         <strong>虚拟订单</strong>
         <div class="virtual-orders-panel-actions">
           <button class="btn btn-virtual-reset" type="button" onclick="Crypto5M.resetVirtualAll()" title="清空虚拟订单并重置余额">重置</button>
+          <button class="btn btn-ai-audit" type="button" onclick="PMAiAssist.auditLosingOrders()" title="AI 复盘亏损虚拟单">AI 审计亏损</button>
           <button class="btn" type="button" onclick="Crypto5M.downloadVirtualOrdersCsv()" title="下载全部虚拟订单 CSV">下载</button>
           <button class="btn" type="button" onclick="Crypto5M.refreshVirtualOrdersPanel()">刷新</button>
           <button class="btn" type="button" onclick="Crypto5M.toggleVirtualOrdersPanel()" aria-label="关闭">✕</button>
@@ -223,10 +223,11 @@
   <button class="btn" type="button" onclick="PMTrade.clearSelection()">清除选择</button>
 </div>
 
-<script src="polymarket-trading.js?v=20260606c"></script>
-<script src="polymarket-auto-schedule.js?v=20260606b"></script>
+<script src="polymarket-trading.js?v=20260608a"></script>
+<script src="polymarket-ai-assist.js?v=20260607f"></script>
+<script src="polymarket-auto-schedule.js?v=20260607f"></script>
 <script src="polymarket-my-orders.js?v=20260527d"></script>
-<script src="polymarket-crypto-short.js?v=20260606c"></script>
-<script src="polymarket-crypto-5m.js?v=20260606c"></script>
+<script src="polymarket-crypto-short.js?v=20260607f"></script>
+<script src="polymarket-crypto-5m.js?v=20260607f"></script>
 </body>
 </html>

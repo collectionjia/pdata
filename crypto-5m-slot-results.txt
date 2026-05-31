@@ -7099,3 +7099,185 @@ HYPE	Hyperliquid Up or Down - May 30, 11:35PM-11:40PM ET	Up 12¢	Down 89¢	→ D
 SOL	Solana Up or Down - May 30, 11:35PM-11:40PM ET	Up 1¢	Down 99¢	→ Down
 XRP	XRP Up or Down - May 30, 11:35PM-11:40PM ET	Up 4¢	Down 97¢	→ Down
 记录时间: 2026/5/31 11:40:06
+
+================================================================
+5M 时间槽结束 · 2026/5/31 14:35:00 (ET May 31, 02:35) · slot=1780209300
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 2:30AM-2:35AM ET	Up 99¢	Down 1¢	→ Up
+BNB	BNB Up or Down - May 31, 2:30AM-2:35AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 2:30AM-2:35AM ET	Up 96¢	Down 4¢	→ Up
+ETH	Ethereum Up or Down - May 31, 2:30AM-2:35AM ET	Up 97¢	Down 4¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 2:30AM-2:35AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 2:30AM-2:35AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 2:30AM-2:35AM ET	Up 97¢	Down 3¢	→ Up
+记录时间: 2026/5/31 14:35:09
+
+================================================================
+5M 时间槽结束 · 2026/5/31 14:45:00 (ET May 31, 02:45) · slot=1780209900
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 2:40AM-2:45AM ET	Up 2¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 2:40AM-2:45AM ET	Up 1¢	Down 99¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 2:40AM-2:45AM ET	Up 5¢	Down 95¢	→ Down
+ETH	Ethereum Up or Down - May 31, 2:40AM-2:45AM ET	Up 2¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 2:40AM-2:45AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 2:40AM-2:45AM ET	Up 2¢	Down 99¢	→ Down
+XRP	XRP Up or Down - May 31, 2:40AM-2:45AM ET	Up 4¢	Down 96¢	→ Down
+记录时间: 2026/5/31 14:48:42
+
+================================================================
+5M 时间槽结束 · 2026/5/31 14:50:00 (ET May 31, 02:50) · slot=1780210200
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 2:45AM-2:50AM ET	Up 97¢	Down 4¢	→ Up
+BNB	BNB Up or Down - May 31, 2:45AM-2:50AM ET	Up 2¢	Down 98¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 2:45AM-2:50AM ET	Up 99¢	Down 1¢	→ Up
+ETH	Ethereum Up or Down - May 31, 2:45AM-2:50AM ET	Up 99¢	Down 2¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 2:45AM-2:50AM ET	Up 95¢	Down 5¢	→ Up
+SOL	Solana Up or Down - May 31, 2:45AM-2:50AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 2:45AM-2:50AM ET	Up 97¢	Down 4¢	→ Up
+记录时间: 2026/5/31 14:50:50
+
+================================================================
+5M 时间槽结束 · 2026/5/31 14:50:00 (ET May 31, 02:50) · slot=1780210200
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 2:50AM-2:55AM ET	Up 2¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 2:50AM-2:55AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 2:50AM-2:55AM ET	Up 85¢	Down 15¢	→ Up
+ETH	Ethereum Up or Down - May 31, 2:50AM-2:55AM ET	Up 1¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 2:50AM-2:55AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 2:50AM-2:55AM ET	Up 49¢	Down 51¢	→ Down
+XRP	XRP Up or Down - May 31, 2:50AM-2:55AM ET	Up 1¢	Down 99¢	→ Down
+记录时间: 2026/5/31 14:55:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 14:55:00 (ET May 31, 02:55) · slot=1780210500
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 2:55AM-3:00AM ET	Up 1¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 2:55AM-3:00AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 2:55AM-3:00AM ET	Up 1¢	Down 99¢	→ Down
+ETH	Ethereum Up or Down - May 31, 2:55AM-3:00AM ET	Up 2¢	Down 98¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 2:55AM-3:00AM ET	Up 99¢	Down 1¢	→ Up
+SOL	Solana Up or Down - May 31, 2:55AM-3:00AM ET	Up 5¢	Down 95¢	→ Down
+XRP	XRP Up or Down - May 31, 2:55AM-3:00AM ET	Up 3¢	Down 99¢	→ Down
+记录时间: 2026/5/31 15:00:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:15:00 (ET May 31, 03:15) · slot=1780211700
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:00AM-3:05AM ET	Up 13¢	Down 88¢	→ Down
+BNB	BNB Up or Down - May 31, 3:00AM-3:05AM ET	Up 44¢	Down 56¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 3:00AM-3:05AM ET	Up 11¢	Down 89¢	→ Down
+ETH	Ethereum Up or Down - May 31, 3:00AM-3:05AM ET	Up 10¢	Down 91¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 3:00AM-3:05AM ET	Up 51¢	Down 50¢	→ Up
+SOL	Solana Up or Down - May 31, 3:00AM-3:05AM ET	Up 18¢	Down 83¢	→ Down
+XRP	XRP Up or Down - May 31, 3:00AM-3:05AM ET	Up 7¢	Down 94¢	→ Down
+记录时间: 2026/5/31 15:15:37
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:25:00 (ET May 31, 03:25) · slot=1780212300
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+ETH	Ethereum Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+XRP	XRP Up or Down - May 31, 3:20AM-3:25AM ET	Up 1¢	Down 99¢	→ Down
+记录时间: 2026/5/31 15:29:17
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:30:00 (ET May 31, 03:30) · slot=1780212600
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+ETH	Ethereum Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+XRP	XRP Up or Down - May 31, 3:30AM-3:35AM ET	Up 1¢	Down 99¢	→ Down
+记录时间: 2026/5/31 15:35:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:35:00 (ET May 31, 03:35) · slot=1780212900
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:35AM-3:40AM ET	Up 33¢	Down 70¢	→ Down
+BNB	BNB Up or Down - May 31, 3:35AM-3:40AM ET	Up 87¢	Down 13¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 3:35AM-3:40AM ET	Up 99¢	Down 1¢	→ Up
+ETH	Ethereum Up or Down - May 31, 3:35AM-3:40AM ET	Up 99¢	Down 1¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 3:35AM-3:40AM ET	Up 99¢	Down 1¢	→ Up
+SOL	Solana Up or Down - May 31, 3:35AM-3:40AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 3:35AM-3:40AM ET	Up 99¢	Down 1¢	→ Up
+记录时间: 2026/5/31 15:40:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:40:00 (ET May 31, 03:40) · slot=1780213200
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:40AM-3:45AM ET	Up 99¢	Down 1¢	→ Up
+BNB	BNB Up or Down - May 31, 3:40AM-3:45AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 3:40AM-3:45AM ET	Up 99¢	Down 1¢	→ Up
+ETH	Ethereum Up or Down - May 31, 3:40AM-3:45AM ET	Up 1¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 3:40AM-3:45AM ET	Up 99¢	Down 1¢	→ Up
+SOL	Solana Up or Down - May 31, 3:40AM-3:45AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 3:40AM-3:45AM ET	Up 3¢	Down 97¢	→ Down
+记录时间: 2026/5/31 15:45:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:45:00 (ET May 31, 03:45) · slot=1780213500
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:45AM-3:50AM ET	Up 99¢	Down 1¢	→ Up
+BNB	BNB Up or Down - May 31, 3:45AM-3:50AM ET	Up 1¢	Down 99¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 3:45AM-3:50AM ET	Up 99¢	Down 1¢	→ Up
+ETH	Ethereum Up or Down - May 31, 3:45AM-3:50AM ET	Up 99¢	Down 1¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 3:45AM-3:50AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 3:45AM-3:50AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 3:45AM-3:50AM ET	Up 1¢	Down 99¢	→ Down
+记录时间: 2026/5/31 15:50:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 15:55:00 (ET May 31, 03:55) · slot=1780214100
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 3:50AM-3:55AM ET	Up 99¢	Down 1¢	→ Up
+BNB	BNB Up or Down - May 31, 3:50AM-3:55AM ET	Up 3¢	Down 98¢	→ Down
+DOGE	Dogecoin Up or Down - May 31, 3:50AM-3:55AM ET	Up 95¢	Down 5¢	→ Up
+ETH	Ethereum Up or Down - May 31, 3:50AM-3:55AM ET	Up 81¢	Down 20¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 3:50AM-3:55AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 3:50AM-3:55AM ET	Up 98¢	Down 3¢	→ Up
+XRP	XRP Up or Down - May 31, 3:50AM-3:55AM ET	Up 98¢	Down 2¢	→ Up
+记录时间: 2026/5/31 15:55:10
+
+================================================================
+5M 时间槽结束 · 2026/5/31 16:00:00 (ET May 31, 04:00) · slot=1780214400
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+BNB	BNB Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+ETH	Ethereum Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+HYPE	Hyperliquid Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+SOL	Solana Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+XRP	XRP Up or Down - May 31, 4:00AM-4:05AM ET	Up 99¢	Down 1¢	→ Up
+记录时间: 2026/5/31 16:05:00
+
+================================================================
+5M 时间槽结束 · 2026/5/31 16:05:00 (ET May 31, 04:05) · slot=1780214700
+说明：结果按槽结束时订单簿中间价判定（价高者为领先侧，非链上官方结算）
+----------------------------------------------------------------
+BTC	Bitcoin Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+BNB	BNB Up or Down - May 31, 4:05AM-4:10AM ET	Up 99¢	Down 1¢	→ Up
+DOGE	Dogecoin Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+ETH	Ethereum Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+HYPE	Hyperliquid Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+SOL	Solana Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+XRP	XRP Up or Down - May 31, 4:05AM-4:10AM ET	Up 1¢	Down 99¢	→ Down
+记录时间: 2026/5/31 16:10:00

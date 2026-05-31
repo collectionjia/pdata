@@ -377,17 +377,53 @@
     return proxy;
   }
 
-  async function hmacSign(secretB64, message) {
+  function decodeApiSecretBytes(secretB64) {
     let normalized = secretB64.replace(/-/g, '+').replace(/_/g, '/').replace(/[^A-Za-z0-9+/=]/g, '');
     const pad = normalized.length % 4;
     if (pad > 0) normalized += '='.repeat(4 - pad);
-    const secretBytes = Uint8Array.from(atob(normalized), (c) => c.charCodeAt(0));
+    return Uint8Array.from(atob(normalized), (c) => c.charCodeAt(0));
+  }
+
+  function localMarketsApiBase() {
+    if (global.location?.protocol?.startsWith('http')) {
+      return `${global.location.protocol}//${global.location.host}`;
+    }
+    return 'http://localhost:3458';
+  }
+
+  async function hmacSignViaServer(secretB64, message) {
+    const resp = await fetch(`${localMarketsApiBase()}/api/hmac-sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: secretB64, message }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || `HMAC 代理失败 HTTP ${resp.status}`);
+    if (!data.signature) throw new Error('HMAC 代理未返回 signature');
+    return data.signature;
+  }
+
+  async function hmacSign(secretB64, message) {
+    const secretBytes = decodeApiSecretBytes(secretB64);
     const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey('raw', secretBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
-    let binary = '';
-    new Uint8Array(sig).forEach((b) => (binary += String.fromCharCode(b)));
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_');
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      try {
+        const key = await crypto.subtle.importKey(
+          'raw',
+          secretBytes,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign'],
+        );
+        const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+        let binary = '';
+        new Uint8Array(sig).forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_');
+      } catch (e) {
+        console.warn('[hmac] crypto.subtle 失败，改用服务端签名', e);
+      }
+    }
+    return hmacSignViaServer(secretB64, message);
   }
 
   async function syncServerTime() {

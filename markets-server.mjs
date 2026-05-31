@@ -5,6 +5,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { createHmac } from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -701,6 +702,72 @@ async function handleHttpRequest(req, res) {
       return sendJson(res, 200, { success: true, event: data });
     } catch (e) {
       return sendJson(res, 502, { success: false, error: e.message || String(e) });
+    }
+  }
+
+  /** CLOB L2 HMAC 签名（HTTP 非安全上下文下浏览器无 crypto.subtle 时使用） */
+  if (url.pathname === '/api/hmac-sign' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const secretB64 = String(body.secret || body.secretB64 || '').trim();
+      const message = String(body.message ?? '');
+      if (!secretB64 || !message) {
+        return sendJson(res, 400, { error: 'missing secret or message' });
+      }
+      let normalized = secretB64.replace(/-/g, '+').replace(/_/g, '/').replace(/[^A-Za-z0-9+/=]/g, '');
+      const pad = normalized.length % 4;
+      if (pad > 0) normalized += '='.repeat(4 - pad);
+      const secretBytes = Buffer.from(normalized, 'base64');
+      const signature = createHmac('sha256', secretBytes).update(message).digest('base64');
+      const urlSafe = signature.replace(/\+/g, '-').replace(/\//g, '_');
+      return sendJson(res, 200, { signature: urlSafe });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message || String(e) });
+    }
+  }
+
+  /** OpenAI 兼容 Chat Completions 代理（避免浏览器 CORS） */
+  if (url.pathname === '/api/ai/chat' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const apiUrl = String(body.apiUrl || '').trim();
+      const apiKey = String(body.apiKey || '').trim();
+      const model = String(body.model || 'gpt-4o-mini').trim();
+      const messages = Array.isArray(body.messages) ? body.messages : [];
+      if (!apiUrl || !apiKey) return sendJson(res, 400, { error: 'missing apiUrl or apiKey' });
+      if (!messages.length) return sendJson(res, 400, { error: 'missing messages' });
+      let endpoint = apiUrl.replace(/\/+$/, '');
+      if (!/\/chat\/completions$/i.test(endpoint)) {
+        endpoint = /\/v1$/i.test(endpoint) ? `${endpoint}/chat/completions` : `${endpoint}/v1/chat/completions`;
+      }
+      const upstream = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.3,
+        }),
+      });
+      const raw = await upstream.text();
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        return sendJson(res, upstream.status, { error: raw.slice(0, 500) || 'invalid upstream response' });
+      }
+      if (!upstream.ok) {
+        const err =
+          data?.error?.message || data?.error || data?.message || raw.slice(0, 300) || `HTTP ${upstream.status}`;
+        return sendJson(res, upstream.status, { error: err });
+      }
+      const content = data?.choices?.[0]?.message?.content || '';
+      return sendJson(res, 200, { content, model: data?.model || model });
+    } catch (e) {
+      return sendJson(res, 502, { error: e.message || String(e) });
     }
   }
 
