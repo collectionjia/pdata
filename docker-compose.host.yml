@@ -1,0 +1,17 @@
+# Linux 专用：绕过 Docker 端口映射，进程直接监听宿主机 9004
+# 用法: docker compose -f docker-compose.host.yml up -d --build
+services:
+  polymarket:
+    build: .
+    container_name: polymarket-markets
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: "9004"
+      HOST: "0.0.0.0"
+      DATA_DIR: "/data"
+    volumes:
+      - polymarket-data:/data
+
+volumes:
+  polymarket-data:

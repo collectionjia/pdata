@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易列表 · Polymarket</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<link rel="stylesheet" href="polymarket-markets-shared.css?v=20260604a">
+</head>
+<body class="traders-page" data-page="traders">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="brand">
+      <div class="brand-icon brand-icon-traders">TX</div>
+      <div>
+        <div class="brand-title">Polymarket Markets</div>
+        <div class="brand-sub">Data API · 交易员排行与成交</div>
+      </div>
+    </div>
+    <nav class="topbar-nav" aria-label="页面切换">
+      <a class="topbar-tab" href="polymarket_active_markets.html">全部市场</a>
+      <a class="topbar-tab" href="polymarket_crypto_5m.html">加密 5分钟</a>
+      <a class="topbar-tab" href="polymarket_crypto_15m.html">加密 15分钟</a>
+      <a class="topbar-tab on" href="polymarket_traders.html">交易列表</a>
+    </nav>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText" class="traders-status-text">就绪</span>
+    <button class="btn btn-wallet" id="walletBtn" type="button" title="仅真实跟单需要">钱包（实盘）</button>
+    <button class="btn btn-primary" id="refreshBtn" type="button">刷新</button>
+  </div>
+</div>
+
+<div class="wallet-panel traders-wallet-panel">
+  <div class="wallet-panel-inner" id="walletPanel">
+    <div class="wp-grid">
+      <div class="wp-field">
+        <span class="wp-label">私钥</span>
+        <input class="wp-input" id="pkInput" type="password" placeholder="0x… 与 5 分钟页共用本地配置">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Key</span>
+        <input class="wp-input" id="apiKeyInput" type="text" placeholder="CLOB L2">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Secret</span>
+        <input class="wp-input" id="apiSecretInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Passphrase</span>
+        <input class="wp-input" id="apiPassInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">代理钱包 (Funder)</span>
+        <input class="wp-input" id="funderInput" type="text" placeholder="Polymarket 代理地址">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">签名类型</span>
+        <select class="wp-input" id="sigTypeSelect">
+          <option value="0">0 - EOA</option>
+          <option value="1" selected>1 - POLY_PROXY</option>
+          <option value="2">2 - MetaMask</option>
+        </select>
+      </div>
+    </div>
+    <div class="wp-actions">
+      <button class="btn btn-primary" type="button" id="walletConnectBtn">保存并连接</button>
+      <button class="btn" type="button" id="walletMetaMaskBtn">MetaMask</button>
+      <button class="btn" type="button" id="walletDeriveBtn">获取 API Key</button>
+      <span id="walletStatus" style="font-size:12px;color:#6b7280">未连接</span>
+      <span id="walletAddr" class="wp-addr" style="display:none"></span>
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="traders-hero-card">
+    <div class="traders-hero-top">
+      <span class="traders-hero-kicker">Polymarket · Data API</span>
+      <h1>交易列表</h1>
+    </div>
+    <p class="traders-hero-desc">交易员排行榜与全站近期成交，支持高级筛选与模拟跟单。</p>
+    <p class="traders-hero-desc traders-hero-desc-muted">数据来自官方 API · 界面参考 <a href="https://polymarketanalytics.com/traders" target="_blank" rel="noopener">Polymarket Analytics</a></p>
+    <p id="pageOriginHint" class="traders-hint" hidden></p>
+  </div>
+</div>
+
+<div class="traders-tabs" role="tablist">
+  <button type="button" class="traders-tab on" data-view="leaderboard">交易员排行</button>
+  <button type="button" class="traders-tab" data-view="trades">近期成交</button>
+</div>
+
+<div id="leaderboardFilters" class="traders-filters">
+  <div class="filter-panel traders-advanced-filters" id="leaderboardClientFilters">
+    <button type="button" class="filter-title filter-title-toggle" id="advancedFilterToggle" aria-expanded="true" aria-controls="advancedFilterBody">
+      <span class="filter-toggle-label"><span class="filter-toggle-icon" aria-hidden="true">▦</span>筛选条件</span>
+      <span class="filter-chevron" aria-hidden="true">▼</span>
+    </button>
+    <div class="traders-advanced-body" id="advancedFilterBody">
+      <div class="traders-filter-section">
+        <div class="traders-filter-section-title">排行榜数据源</div>
+        <div class="filter-rows traders-lb-api-rows">
+          <div class="filter-row">
+            <span class="filter-label">分类</span>
+            <select class="sort-select" id="lbCategory">
+              <option value="OVERALL" selected>全部</option>
+              <option value="CRYPTO">加密</option>
+              <option value="POLITICS">政治</option>
+              <option value="SPORTS">体育</option>
+              <option value="CULTURE">文化</option>
+              <option value="MENTIONS">提及</option>
+              <option value="WEATHER">天气</option>
+              <option value="ECONOMICS">经济</option>
+              <option value="TECH">科技</option>
+              <option value="FINANCE">金融</option>
+            </select>
+            <span class="filter-label">周期</span>
+            <select class="sort-select" id="lbPeriod">
+              <option value="DAY" selected>今日</option>
+              <option value="WEEK">本周</option>
+              <option value="MONTH">本月</option>
+              <option value="ALL">全部时间</option>
+            </select>
+            <span class="filter-label">排序</span>
+            <select class="sort-select" id="lbOrderBy">
+              <option value="PNL" selected>盈亏</option>
+              <option value="VOL">成交量</option>
+            </select>
+            <span class="filter-label">条数</span>
+            <select class="sort-select" id="lbLimit">
+              <option value="25" selected>25 条</option>
+              <option value="50">50 条</option>
+            </select>
+          </div>
+          <div class="filter-row">
+            <span class="filter-label">钱包</span>
+            <input class="filter-input traders-mono" id="lbUser" type="text" placeholder="0x… 查单人排行">
+          </div>
+          <div class="filter-row" style="margin:0">
+            <label class="traders-check">
+              <input type="checkbox" id="lbLoadStats" checked>
+              <span>加载持仓指标（持仓 / 活跃 / 增益·亏损 / 胜率 / 净值；每行额外请求，略慢）</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="traders-filter-section">
+        <div class="traders-filter-section-title">列表内范围筛选</div>
+        <div id="traderFilterGrid" class="traders-filter-grid"></div>
+      </div>
+      <div class="traders-filter-footer">
+        <div class="traders-search-wrap">
+          <span class="traders-search-icon" aria-hidden="true">⌕</span>
+          <input type="search" class="filter-input traders-search-input" id="traderSearch" placeholder="按交易员名称或钱包地址搜索…">
+        </div>
+        <div class="traders-filter-actions">
+          <button type="button" class="btn" id="filterWatchFiltered" title="将当前筛选结果全部勾选跟单">筛选结果加入监视</button>
+          <button type="button" class="btn btn-primary" id="filterApply">应用筛选</button>
+          <button type="button" class="btn" id="filterClear">清除筛选</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tradesFilters" class="traders-filters" hidden>
+  <div class="filter-panel">
+    <div class="filter-title"><span>成交筛选</span></div>
+    <div class="filter-rows">
+      <div class="filter-row">
+        <span class="filter-label">方向</span>
+        <select class="sort-select" id="trSide">
+          <option value="">全部方向</option>
+          <option value="BUY">买入</option>
+          <option value="SELL">卖出</option>
+        </select>
+        <label class="traders-check">
+          <input type="checkbox" id="trTakerOnly" checked>
+          <span>仅吃单（Taker）</span>
+        </label>
+        <span class="filter-label">条数</span>
+        <select class="sort-select" id="trLimit">
+          <option value="50" selected>50 条</option>
+          <option value="100">100 条</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">钱包</span>
+        <input class="filter-input traders-mono" id="trUser" type="text" placeholder="0x… 仅看该地址成交">
+        <button type="button" class="btn btn-primary" id="trApply">查询</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="traders-main">
+  <section id="leaderboardSection" class="traders-panel">
+    <div class="traders-panel-hd traders-panel-hd-split">
+      <div class="traders-panel-hd-main">
+        <h2 class="traders-panel-title">交易员排行榜</h2>
+        <span id="leaderboardSub" class="traders-panel-meta">—</span>
+      </div>
+      <div class="traders-panel-hd-tools">
+        <button type="button" class="btn btn-copy-orders-list" id="copyOrdersListBtn" title="查看跟单成交记录">
+          跟单列表 <span class="copy-orders-badge" id="copyOrdersBadge">0</span>
+        </button>
+      <div class="traders-balance-pill" id="tradersBalancePill" title="连接钱包后显示 CLOB 余额">
+        <div class="traders-balance-row">
+          <span class="traders-balance-label">可用 USDC</span>
+          <strong id="tradersBalanceUsdc" class="traders-balance-val">—</strong>
+        </div>
+        <div class="traders-balance-row">
+          <span class="traders-balance-label">总资产</span>
+          <strong id="tradersBalanceTotal" class="traders-balance-val">—</strong>
+        </div>
+        <button type="button" class="btn traders-balance-refresh" id="tradersBalanceRefresh" title="刷新余额">↻</button>
+      </div>
+      </div>
+    </div>
+    <div id="copyOrdersListPanel" class="traders-copy-orders-panel" aria-hidden="true">
+      <div class="traders-copy-orders-hd">
+        <strong>跟单订单</strong>
+        <div class="traders-copy-orders-actions">
+          <button type="button" class="btn" id="copyOrdersRefresh">刷新</button>
+          <button type="button" class="btn" id="copyOrdersClose" aria-label="关闭">✕</button>
+        </div>
+      </div>
+      <div id="copyOrdersListBody" class="traders-copy-orders-body">
+        <div class="copy-orders-empty">暂无跟单记录</div>
+      </div>
+    </div>
+    <div class="traders-table-wrap">
+      <table class="traders-table">
+        <thead>
+          <tr>
+            <th class="traders-watch-th" title="跟单监视">
+              <input type="checkbox" id="watchAll" title="全选本页">
+            </th>
+            <th>#</th>
+            <th>交易员</th>
+            <th class="num" title="当前持仓条数">持仓</th>
+            <th class="num" title="市值&gt;0 且未仅可赎回">活跃</th>
+            <th class="num" title="盈利合计 / 亏损合计">增益 / 亏损</th>
+            <th class="num" title="已平仓位样本胜率">胜率</th>
+            <th class="num" title="持仓总市值">净值</th>
+            <th class="num" title="排行榜周期内 PNL">PNL</th>
+            <th class="num">成交量</th>
+            <th>X</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <tr><td colspan="12" class="traders-empty">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tradesSection" class="traders-panel" hidden>
+    <div class="traders-panel-hd">
+      <h2 class="traders-panel-title">近期成交</h2>
+      <span id="tradesSub" class="traders-panel-meta">—</span>
+    </div>
+    <div class="traders-table-wrap">
+      <table class="traders-table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>市场</th>
+            <th>结果</th>
+            <th>方向</th>
+            <th class="num">价格</th>
+            <th class="num">数量</th>
+            <th>交易员</th>
+          </tr>
+        </thead>
+        <tbody id="tradesBody">
+          <tr><td colspan="7" class="traders-empty">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="tradersFoot" class="traders-foot"></div>
+
+  <section id="traderDetailPanel" class="traders-panel traders-detail" hidden>
+    <div class="traders-panel-hd">
+      <h2 id="traderDetailTitle">交易员成交</h2>
+      <button type="button" class="btn" id="closeTraderDetail">关闭</button>
+    </div>
+    <div id="traderDetailBody" class="traders-table-wrap"></div>
+  </section>
+</div>
+
+<footer class="traders-api-foot">
+  <code>GET /api/v1/leaderboard</code> · <code>GET /api/data/trades</code> ·
+  <code>GET /api/positions</code> · <code>GET /api/closed-positions</code> · <code>GET /api/value</code>
+  · <a href="https://docs.polymarket.com/api-reference/introduction" target="_blank" rel="noopener">API 文档</a>
+</footer>
+
+<script src="polymarket-trading.js?v=20260606a"></script>
+<script src="polymarket-traders.js?v=20260603c"></script>
+<script src="polymarket-traders-copy.js?v=20260604b"></script>
+<script>
+document.getElementById('walletBtn')?.addEventListener('click', () => PMTrade?.toggleWallet?.());
+document.getElementById('walletMetaMaskBtn')?.addEventListener('click', async () => {
+  await PMTrade?.connectMetaMask?.();
+  PMTraders?.refreshTradersBalance?.();
+});
+document.getElementById('walletConnectBtn')?.addEventListener('click', async () => {
+  await PMTrade?.connectWallet?.();
+  PMTraders?.refreshTradersBalance?.();
+});
+document.getElementById('walletDeriveBtn')?.addEventListener('click', () => PMTrade?.deriveApiKey?.());
+</script>
+</body>
+</html>

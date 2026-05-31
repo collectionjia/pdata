@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymarket 高胜率市场 v7</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<script>
+// 兜底：如果主CDN加载失败，尝试备用CDN
+if(typeof ethers === 'undefined'){
+  document.write('<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"><\/script>');
+}
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:13px;line-height:1.6}
+.header{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.12);padding:14px 24px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header-left{display:flex;align-items:center;gap:10px}
+.logo{width:26px;height:26px;background:#0066ff;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;font-size:13px;flex-shrink:0}
+.title{font-size:15px;font-weight:500}
+.subtitle{font-size:11px;color:#888}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fg{display:flex;align-items:center;gap:6px;background:#f4f5f7;border-radius:7px;padding:5px 10px;border:0.5px solid rgba(0,0,0,0.1)}
+.fl{font-size:11px;color:#666}
+.fi{border:none;background:transparent;font-size:12px;width:44px;text-align:center;color:#1a1a2e;outline:none}
+.btn{padding:6px 12px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.15);background:#fff;font-size:12px;cursor:pointer;color:#1a1a2e}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:#0066ff;color:#fff;border-color:#0066ff}
+.btn-primary:hover{background:#0052cc}
+.btn-primary:disabled{background:#aaa;border-color:#aaa;cursor:not-allowed}
+.btn-wallet{background:#f59e0b;color:#fff;border-color:#f59e0b;font-size:11px;padding:4px 10px}
+.btn-wallet:hover{background:#d97706}
+.btn-wallet.connected{background:#22c55e;border-color:#22c55e}
+.sbar{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.08);padding:7px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.sc{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
+.dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.dot.g{background:#22c55e}
+.dot.b{background:#3b82f6;animation:pulse 1.4s infinite}
+.dot.r{background:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.main{padding:16px 24px 70px;max-width:1400px;margin:0 auto}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.met{background:#fff;border-radius:8px;padding:11px 13px;border:0.5px solid rgba(0,0,0,0.08)}
+.met-l{font-size:11px;color:#888;margin-bottom:3px}
+.met-v{font-size:20px;font-weight:500}
+.tabs{display:flex;gap:0;border-bottom:0.5px solid rgba(0,0,0,0.1);margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:7px 14px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:#888;white-space:nowrap;flex-shrink:0}
+.tab:hover{color:#1a1a2e}
+.tab.active{color:#0066ff;border-bottom-color:#0066ff;font-weight:500}
+.tc{display:inline-flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:10px;padding:1px 5px;font-size:10px;margin-left:4px;color:#666}
+.tab.active .tc{background:#e0edff;color:#0066ff}
+.cat-sec{margin-bottom:24px}
+.cat-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cat-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.cat-name{font-size:14px;font-weight:500}
+.cat-cnt{font-size:11px;color:#888}
+.tbl-wrap{background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.08);overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead tr{background:#fafafa;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+th{padding:9px 12px;font-size:11px;font-weight:500;color:#888;text-align:left}
+td{padding:9px 12px;font-size:12px;border-bottom:0.5px solid rgba(0,0,0,0.05);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafffe}
+.q-cell{font-size:12px;color:#1a1a2e;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45;cursor:pointer}
+.q-cell:hover{color:#0066ff}
+.prob-wrap{display:flex;align-items:center;gap:7px}
+.prob-num{font-size:12px;font-weight:500;min-width:32px;text-align:right}
+.prob-num.hi{color:#166534}
+.prob-num.lo{color:#991b1b}
+.pbar-mini{flex:1;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:40px}
+.pbar-fill{height:100%;border-radius:3px}
+.outcome-tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;background:#dcfce7;color:#166534;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.outcome-tag.lo{background:#fee2e2;color:#991b1b}
+.cd{font-size:11px;color:#9333ea;font-weight:500;white-space:nowrap}
+.vol{font-size:11px;color:#888;white-space:nowrap}
+.loading{text-align:center;padding:50px 20px;color:#888}
+.spin{width:28px;height:28px;border:2px solid #e0e0e0;border-top-color:#0066ff;border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{background:#fff;border-radius:10px;border:0.5px solid rgba(239,68,68,0.3);padding:18px;margin:16px 0;color:#991b1b;text-align:center}
+.empty-cat{background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.08);padding:24px;text-align:center;color:#aaa;font-size:12px}
+.empty-cat .empty-icon{font-size:22px;margin-bottom:6px;opacity:0.4}
+.prog-wrap{width:100%;background:transparent;height:2px;position:fixed;top:0;left:0;z-index:9999}
+.prog{height:100%;background:#0066ff;transition:width 0.2s;width:0}
+.col-q{width:30%}.col-out{width:11%}.col-prob{width:15%}.col-cd{width:11%}.col-vol{width:9%}.col-link{width:7%}.col-buy{width:17%}
+.col-sel{width:32px;text-align:center}
+.sel-checkbox{width:15px;height:15px;cursor:pointer}
+.sel-checkbox:checked{accent-color:#0066ff}
+.col-q{width:calc(30% - 32px)}
+.link-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;background:#eff6ff;color:#1d4ed8;text-decoration:none;white-space:nowrap}
+.link-btn:hover{background:#dbeafe}
+.buy-row{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.buy-amt{width:42px;border:1px solid #ddd;border-radius:4px;padding:2px 4px;font-size:11px;text-align:center;outline:none}
+.buy-amt:focus{border-color:#0066ff}
+.buy-btn{padding:3px 8px;border-radius:5px;border:none;font-size:11px;cursor:pointer;color:#fff;background:#22c55e;white-space:nowrap}
+.buy-btn:hover{background:#16a34a}
+.buy-btn:disabled{background:#aaa;cursor:not-allowed}
+.buy-btn.sell{background:#ef4444}
+.buy-btn.sell:hover{background:#dc2626}
+
+/* 钱包面板 */
+.wallet-panel{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.1);padding:0 24px;max-height:0;overflow:hidden;transition:max-height 0.3s,padding 0.3s}
+.wallet-panel.open{max-height:300px;padding:16px 24px}
+.wp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.wp-field{display:flex;flex-direction:column;gap:3px}
+.wp-label{font-size:11px;color:#888}
+.wp-input{border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;font-family:monospace}
+.wp-input:focus{border-color:#0066ff}
+.wp-status{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px}
+.wp-addr{font-family:monospace;font-size:11px;color:#666;background:#f4f5f7;padding:3px 8px;border-radius:4px}
+
+/* Toast 通知 */
+.toast-wrap{position:fixed;top:60px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:8px;font-size:12px;color:#fff;max-width:380px;word-break:break-word;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:toastIn 0.3s}
+.toast.success{background:#16a34a}
+.toast.error{background:#dc2626}
+.toast.info{background:#2563eb}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+/* 浮动批量操作栏 */
+.batch-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid rgba(0,0,0,0.12);padding:10px 24px;display:flex;align-items:center;gap:12px;z-index:9998;box-shadow:0 -4px 12px rgba(0,0,0,0.08);transform:translateY(100%);transition:transform 0.25s}
+.batch-bar.show{transform:translateY(0)}
+.batch-info{font-size:12px;color:#333;white-space:nowrap}
+.batch-info b{color:#0066ff}
+
+/* 订单中心面板 */
+.oc-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f5f7;z-index:9997;display:none;flex-direction:column}
+.oc-panel.open{display:flex}
+.oc-header{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.12);padding:14px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.oc-title{font-size:15px;font-weight:500;flex:1}
+.oc-body{flex:1;overflow-y:auto;padding:16px 24px}
+.oc-filters{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.oc-stat{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#666;background:#fff;padding:4px 10px;border-radius:6px;border:0.5px solid rgba(0,0,0,0.08)}
+.oc-stat b{color:#1a1a2e}
+.oc-tbl-wrap{background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.08);overflow:hidden}
+.oc-tbl-wrap table{table-layout:auto}
+.oc-col-side{width:50px;text-align:center}
+.oc-col-price{width:70px;text-align:right}
+.oc-col-size{width:80px;text-align:right}
+.oc-col-status{width:70px;text-align:center}
+.oc-col-time{width:100px;white-space:nowrap}
+.oc-col-action{width:60px;text-align:center}
+.side-buy{color:#166534;font-weight:500}
+.side-sell{color:#991b1b;font-weight:500}
+.status-live{background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-size:10px}
+.status-matched{background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-size:10px}
+.status-cancelled{background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:8px;font-size:10px}
+.cancel-btn{padding:2px 8px;border-radius:4px;border:1px solid #fca5a5;background:#fff;color:#ef4444;font-size:10px;cursor:pointer}
+.cancel-btn:hover{background:#fef2f2}
+.cancel-btn:disabled{opacity:0.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div class="prog-wrap"><div class="prog" id="pbar"></div></div>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">P</div>
+    <div>
+      <div class="title">Polymarket 高胜率市场</div>
+      <div class="subtitle" id="subTitle">胜率 80~90%，每分类最多10条</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="fg">
+      <span class="fl">胜率</span>
+      <input class="fi" id="minP" type="number" value="80" min="0" max="100">
+      <span class="fl">%~</span>
+      <input class="fi" id="maxP" type="number" value="90" min="0" max="100">
+      <span class="fl">%</span>
+    </div>
+    <div class="fg">
+      <span class="fl">结束于</span>
+      <select class="fi" id="endRange" style="width:auto;min-width:70px;padding:1px 4px;border-radius:4px">
+        <option value="1">1小时内</option>
+        <option value="6">6小时内</option>
+        <option value="12">12小时内</option>
+        <option value="6" selected>6小时内</option>
+        <option value="72">3天内</option>
+        <option value="168">7天内</option>
+        <option value="720">30天内</option>
+        <option value="0">不限</option>
+      </select>
+    </div>
+    <div class="fg">
+      <span class="fl">交易量 ≥</span>
+      <select class="fi" id="minVol" style="width:auto;min-width:60px;padding:1px 4px;border-radius:4px">
+        <option value="1000" selected>$1K</option>
+        <option value="1000">$1K</option>
+        <option value="5000">$5K</option>
+        <option value="10000">$10K</option>
+        <option value="100000">$100K</option>
+        <option value="1000000">$1M</option>
+        <option value="10000000">$10M</option>
+      </select>
+    </div>
+    <div class="fg">
+      <span class="fl">每单</span>
+      <input class="fi" id="orderAmt" type="number" value="1" min="1" style="width:36px">
+      <span class="fl">USDC</span>
+    </div>
+    <div class="fg">
+      <span class="fl">每类限</span>
+      <input class="fi" id="limit" type="number" value="10" min="1" max="50" style="width:30px">
+      <span class="fl">条</span>
+    </div>
+    <button class="btn btn-wallet" id="walletBtn" onclick="toggleWallet()">钱包</button>
+    <button class="btn" id="orderCenterBtn" onclick="toggleOrderCenter()" style="font-size:11px;padding:4px 10px;background:#f0f0f0">订单中心</button>
+    <button class="btn btn-primary" id="rfBtn" onclick="load()">刷新数据</button>
+  </div>
+</div>
+
+<!-- 钱包配置面板 -->
+<div class="wallet-panel" id="walletPanel">
+  <div class="wp-grid">
+    <div class="wp-field">
+      <span class="wp-label">私钥（Private Key）</span>
+      <input class="wp-input" id="pkInput" type="text" placeholder="0x... 或不带0x">
+    </div>
+    <div class="wp-field">
+      <span class="wp-label">API Key</span>
+      <input class="wp-input" id="apiKeyInput" type="text" placeholder="UUID格式">
+    </div>
+    <div class="wp-field">
+      <span class="wp-label">API Secret</span>
+      <input class="wp-input" id="apiSecretInput" type="text" placeholder="base64编码">
+    </div>
+    <div class="wp-field">
+      <span class="wp-label">API Passphrase</span>
+      <input class="wp-input" id="apiPassInput" type="text" placeholder="passphrase">
+    </div>
+    <div class="wp-field">
+      <span class="wp-label">代理钱包地址 (Funder/Proxy)</span>
+      <input class="wp-input" id="funderInput" type="text" placeholder="0x... Polymarket 代理钱包地址，留空则使用 EOA">
+    </div>
+    <div class="wp-field">
+      <span class="wp-label">签名类型 (SignatureType)</span>
+      <select class="wp-input" id="sigTypeSelect" style="padding:4px 8px;cursor:pointer" onchange="updateSigInfo()">
+        <option value="0">0 - EOA（无代理钱包）</option>
+        <option value="1" selected>1 - POLY_PROXY（Email/Magic Link 登录）</option>
+        <option value="2">2 - POLY_GNOSIS（MetaMask/浏览器钱包登录）</option>
+      </select>
+    </div>
+  </div>
+  <div class="wp-status">
+    <button class="btn btn-primary" onclick="connectWallet()" style="font-size:11px;padding:4px 12px">连接钱包</button>
+    <button class="btn" onclick="deriveApiKey()" style="font-size:11px;padding:4px 12px">自动获取 API Key</button>
+    <button class="btn" onclick="redetectApiKey()" style="font-size:11px;padding:4px 12px;color:#dc2626;border-color:#fca5a5">重新获取 API Key</button>
+    <button class="btn" onclick="fetchProxyAddress()" style="font-size:11px;padding:4px 12px;color:#7c3aed;border-color:#7c3aed">获取代理地址</button>
+    <button class="btn" onclick="testApiKey()" style="font-size:11px;padding:4px 12px;color:#0891b2;border-color:#0891b2">测试 API Key</button>
+    <span id="walletStatus" style="color:#888">未连接</span>
+    <span id="walletAddr" class="wp-addr" style="display:none"></span>
+    <span id="funderAddr" class="wp-addr" style="display:none;color:#7c3aed"></span>
+  </div>
+</div>
+
+<div class="sbar">
+  <div class="sc"><div class="dot" id="sdot"></div><span id="stxt">等待加载</span></div>
+  <div class="sc">更新：<span id="lupd">—</span></div>
+  <div class="sc">签名：<span id="sigInfo" style="color:#7c3aed">POLY_PROXY (sigType=1)</span></div>
+  <div class="sc">来源：Polymarket Gamma API</div>
+</div>
+
+<div class="main">
+  <div class="metrics">
+    <div class="met"><div class="met-l">符合条件</div><div class="met-v" id="mTotal">—</div></div>
+    <div class="met"><div class="met-l">分类数</div><div class="met-v" id="mCats">—</div></div>
+    <div class="met"><div class="met-l">平均胜率</div><div class="met-v" id="mAvg">—</div></div>
+    <div class="met"><div class="met-l">总交易量</div><div class="met-v" id="mVol">—</div></div>
+  </div>
+  <div id="tabsWrap" style="display:none"><div class="tabs" id="tabs"></div></div>
+  <div id="content"><div class="loading"><div class="spin"></div><div>点击「刷新数据」开始</div></div></div>
+</div>
+
+<!-- 订单中心面板 -->
+<div class="oc-panel" id="ocPanel">
+  <div class="oc-header">
+    <span class="oc-title">📊 持仓中心</span>
+    <div class="oc-filters" style="margin-bottom:0">
+      <div class="oc-stat">订单 <b id="ocTotal">0</b></div>
+      <div class="oc-stat">持仓总值 <b id="ocValue">—</b></div>
+      <select id="ocFilter" style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:11px;outline:none" onchange="onOcFilterChange()">
+        <option value="positions" selected>持仓</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="onOcFilterChange()" style="font-size:11px;padding:4px 12px">刷新</button>
+    <button class="btn" onclick="toggleOrderCenter()" style="font-size:11px;padding:4px 12px">✕ 关闭</button>
+  </div>
+  <div class="oc-body" id="ocBody">
+    <div class="loading"><div class="spin"></div><div>连接钱包后查看订单...</div></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- 浮动批量下单栏 -->
+<div class="batch-bar" id="batchBar">
+  <div class="batch-info" id="batchInfo">已选 <b id="batchCount">0</b> 个市场</div>
+  <div class="fg">
+    <span class="fl">每单</span>
+    <input class="fi" id="batchAmt" type="number" value="1" min="1" style="width:42px">
+    <span class="fl">USDC</span>
+  </div>
+  <button class="btn btn-primary" onclick="batchOrder('BUY')" style="font-size:11px;padding:5px 14px">批量买入</button>
+  <button class="btn" onclick="batchOrder('SELL')" style="font-size:11px;padding:5px 14px;color:#ef4444;border-color:#fca5a5">批量卖出</button>
+  <button class="btn" onclick="clearSelection()" style="font-size:11px;padding:5px 10px;color:#888">清除选择</button>
+</div>
+
+<script>
+let grouped = {};
+let curTab = 'all';
+let allMarketsCache = []; // 缓存所有市场数据用于下单
+let walletState = { address: null, pk: null, apiKey: null, apiSecret: null, apiPass: null, funder: null, sigType: 1 };
+
+const $ = id => document.getElementById(id);
+
+// ===== 固定分类定义 =====
+const CATEGORIES = [
+  { key:'politics',  name:'政治', color:'#3b82f6', tags:['Politics','Geopolitics','Elections','Global Elections','US Election','Main Election','Foreign Policy','World Elections','Primaries'] },
+  { key:'crypto',    name:'加密', color:'#f59e0b', tags:['Crypto','Airdrops'] },
+  { key:'finance',   name:'财务', color:'#84cc16', tags:['Finance','Business','Stocks','IPOs','exchange','Earn 4%','Pre-Market'] },
+  { key:'tech',      name:'科技', color:'#ec4899', tags:['Tech','AI'] },
+  { key:'culture',   name:'文化', color:'#f97316', tags:['Culture','Entertainment','Taylor Swift'] },
+  { key:'economy',   name:'经济', color:'#10b981', tags:['Economy'] },
+  { key:'weather',   name:'天气', color:'#06b6d4', tags:['Weather'] },
+];
+const CAT_OTHER = { key:'other', name:'其他', color:'#6b7280' };
+
+const TAG_MAP = {};
+CATEGORIES.forEach(cat => { cat.tags.forEach(t => { TAG_MAP[t.toLowerCase()] = cat.key; }); });
+
+function classifyEvent(tags){
+  if(!tags || !tags.length) return CAT_OTHER.key;
+  for(const tag of tags){
+    const mapped = TAG_MAP[tag.label?.toLowerCase()];
+    if(mapped) return mapped;
+  }
+  return CAT_OTHER.key;
+}
+
+function prog(n){ $('pbar').style.width = n + '%' }
+function status(cls, txt){ $('sdot').className = 'dot ' + cls; $('stxt').textContent = txt }
+function updateSigInfo(){
+  const names = ['EOA', 'POLY_PROXY', 'POLY_GNOSIS'];
+  const st = walletState.sigType !== undefined ? walletState.sigType : 1;
+  $('sigInfo').textContent = (names[st] || '未知') + ' (sigType=' + st + ')';
+}
+
+// ===== Toast 通知 =====
+function toast(msg, type='info'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('toastWrap').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+// ===== 钱包管理 =====
+function toggleWallet(){
+  const panel = $('walletPanel');
+  panel.classList.toggle('open');
+}
+
+function loadWalletFromStorage(){
+  const saved = localStorage.getItem('pm_wallet');
+  if(saved){
+    try {
+      const d = JSON.parse(saved);
+      walletState = d;
+      walletState.sigType = 1; // 强制使用 POLY_PROXY 签名类型
+      $('pkInput').value = d.pk || '';
+      $('apiKeyInput').value = d.apiKey || '';
+      $('apiSecretInput').value = d.apiSecret || '';
+      $('apiPassInput').value = d.apiPass || '';
+      $('funderInput').value = d.funder || '';
+      $('sigTypeSelect').value = '1';
+      updateSigInfo();
+      if(d.address) updateWalletUI(d.address, d.funder);
+    } catch(e){}
+  }
+}
+
+function saveWalletToStorage(){
+  localStorage.setItem('pm_wallet', JSON.stringify(walletState));
+}
+
+function updateWalletUI(addr, funder){
+  $('walletStatus').textContent = '已连接';
+  $('walletStatus').style.color = '#22c55e';
+  $('walletAddr').textContent = 'EOA: ' + addr.slice(0,6) + '...' + addr.slice(-4);
+  $('walletAddr').style.display = 'inline';
+  if(funder){
+    $('funderAddr').textContent = '代理: ' + funder.slice(0,6) + '...' + funder.slice(-4);
+    $('funderAddr').style.display = 'inline';
+  }
+  $('walletBtn').textContent = '已连接';
+  $('walletBtn').classList.add('connected');
+}
+
+async function connectWallet(){
+  if(typeof ethers === 'undefined'){
+    toast('ethers.js 未加载，请检查网络连接后刷新页面', 'error');
+    return;
+  }
+  const pk = $('pkInput').value.trim();
+  const apiKey = $('apiKeyInput').value.trim();
+  const apiSecret = $('apiSecretInput').value.trim();
+  const apiPass = $('apiPassInput').value.trim();
+  const funder = $('funderInput').value.trim();
+
+  if(!pk){ toast('请输入私钥', 'error'); return; }
+
+  try {
+    // 规范化私钥
+    let normalizedPk = pk;
+    if(!normalizedPk.startsWith('0x')) normalizedPk = '0x' + normalizedPk;
+
+    const wallet = new ethers.Wallet(normalizedPk);
+    walletState.pk = normalizedPk;
+    walletState.address = wallet.address;
+    walletState.apiKey = apiKey;
+    walletState.apiSecret = apiSecret;
+    walletState.apiPass = apiPass;
+    walletState.funder = funder && funder.startsWith('0x') ? funder : (funder ? '0x' + funder : null);
+    walletState.sigType = parseInt($('sigTypeSelect').value) || 0;
+
+    saveWalletToStorage();
+    updateWalletUI(wallet.address, walletState.funder);
+    updateSigInfo();
+    toast('钱包已连接: ' + wallet.address.slice(0,6) + '...' + (walletState.funder ? ' (代理: ' + walletState.funder.slice(0,6) + '...)' : ''), 'success');
+  } catch(e){
+    toast('私钥无效: ' + e.message, 'error');
+  }
+}
+
+async function deriveApiKey(){
+  if(typeof ethers === 'undefined'){
+    toast('ethers.js 未加载，请检查网络连接后刷新页面', 'error');
+    return;
+  }
+  const pk = $('pkInput').value.trim();
+  if(!pk){ toast('请先输入私钥', 'error'); return; }
+
+  try {
+    let normalizedPk = pk;
+    if(!normalizedPk.startsWith('0x')) normalizedPk = '0x' + normalizedPk;
+    const wallet = new ethers.Wallet(normalizedPk);
+    const address = wallet.address;
+
+    // 第一步：尝试 POST /auth/api-key（创建新凭证）
+    const ts1 = Math.floor(Date.now() / 1000).toString();
+    const nonce = '0';
+    const sig1 = await signL1Auth(wallet, address, ts1, nonce);
+
+    const createHeaders = {
+      'POLY_ADDRESS': address,
+      'POLY_SIGNATURE': sig1,
+      'POLY_TIMESTAMP': ts1,
+      'POLY_NONCE': nonce,
+      'Content-Type': 'application/json'
+    };
+
+    let data = null;
+    let usedMethod = '';
+
+    try {
+      const resp = await fetch('https://clob.polymarket.com/auth/api-key', {
+        method: 'POST',
+        headers: createHeaders
+      });
+      const result = await resp.json();
+
+      if(resp.ok && result.apiKey){
+        data = result;
+        usedMethod = 'create';
+      } else {
+        // 可能是 NONCE_ALREADY_USED，尝试 derive
+        console.log('create 返回:', resp.status, JSON.stringify(result));
+        throw new Error('NEED_DERIVE');
+      }
+    } catch(e){
+      if(e.message === 'NEED_DERIVE' || e.message.includes('NEED_DERIVE')){
+        // 第二步：derive 已有凭证（GET /auth/derive-api-key）
+        const ts2 = Math.floor(Date.now() / 1000).toString();
+        const sig2 = await signL1Auth(wallet, address, ts2, nonce);
+
+        const deriveHeaders = {
+          'POLY_ADDRESS': address,
+          'POLY_SIGNATURE': sig2,
+          'POLY_TIMESTAMP': ts2,
+          'POLY_NONCE': nonce
+        };
+
+        const resp2 = await fetch('https://clob.polymarket.com/auth/derive-api-key', {
+          method: 'GET',
+          headers: deriveHeaders
+        });
+
+        if(!resp2.ok){
+          const errText = await resp2.text();
+          throw new Error('Derive 失败 (HTTP ' + resp2.status + '): ' + errText.slice(0,200));
+        }
+
+        data = await resp2.json();
+        usedMethod = 'derive';
+      } else {
+        throw e;
+      }
+    }
+
+    // 解析 API Key 响应（兼容两种格式）
+    let apiKeyStr, apiSecretStr, apiPassStr;
+
+    if(Array.isArray(data.apiKey)){
+      // 数组格式：{ apiKey: [{ key, secret, passphrase }] }
+      const first = data.apiKey[0];
+      if(!first) throw new Error('API 返回空数组');
+      apiKeyStr = first.key || first.apiKey;
+      apiSecretStr = first.secret;
+      apiPassStr = first.passphrase;
+    } else {
+      // 扁平格式：{ apiKey, secret, passphrase }
+      apiKeyStr = data.apiKey;
+      apiSecretStr = data.secret;
+      apiPassStr = data.passphrase;
+    }
+
+    if(!apiKeyStr || !apiSecretStr){
+      throw new Error('API 返回数据缺少必要字段: ' + JSON.stringify(data).slice(0,300));
+    }
+
+    walletState.pk = normalizedPk;
+    walletState.address = address;
+    walletState.apiKey = apiKeyStr;
+    walletState.apiSecret = apiSecretStr;
+    walletState.apiPass = apiPassStr;
+
+    $('apiKeyInput').value = walletState.apiKey;
+    $('apiSecretInput').value = walletState.apiSecret;
+    $('apiPassInput').value = walletState.apiPass || '';
+
+    saveWalletToStorage();
+    updateWalletUI(address, walletState.funder);
+    toast(`API Key 获取成功 (${usedMethod})`, 'success');
+  } catch(e){
+    toast('获取 API Key 失败: ' + e.message, 'error');
+  }
+}
+
+// ===== 获取代理钱包地址 =====
+async function fetchProxyAddress(){
+  if(typeof ethers === 'undefined'){
+    toast('ethers.js 未加载', 'error');
+    return;
+  }
+  const pk = $('pkInput').value.trim();
+  if(!pk){ toast('请先输入私钥', 'error'); return; }
+
+  try {
+    let normalizedPk = pk;
+    if(!normalizedPk.startsWith('0x')) normalizedPk = '0x' + normalizedPk;
+    const wallet = new ethers.Wallet(normalizedPk);
+    const address = wallet.address;
+
+    toast('正在获取代理钱包地址...', 'info');
+
+    // 方法1: 通过 CLOB API GET /register 获取
+    const ts = Math.floor(Date.now() / 1000).toString();
+    const nonce = '0';
+    const sig = await signL1Auth(wallet, address, ts, nonce);
+
+    const headers = {
+      'POLY_ADDRESS': address,
+      'POLY_SIGNATURE': sig,
+      'POLY_TIMESTAMP': ts,
+      'POLY_NONCE': nonce
+    };
+
+    const resp = await fetch('https://clob.polymarket.com/register', {
+      method: 'GET',
+      headers: headers
+    });
+
+    if(!resp.ok){
+      throw new Error('API 返回 HTTP ' + resp.status);
+    }
+
+    const data = await resp.json();
+    console.log('/register 响应:', data);
+
+    // 尝试从响应中提取代理地址
+    let proxyAddr = data.proxy_address || data.proxyAddress || data.funder ||
+                    data.address || data.safe_address || data.safeAddress || null;
+
+    // 如果是数组，取第一个
+    if(Array.isArray(data) && data.length > 0){
+      const first = data[0];
+      proxyAddr = first.proxy_address || first.proxyAddress || first.funder ||
+                  first.address || first.safe_address || first.safeAddress || null;
+    }
+
+    if(!proxyAddr){
+      // 尝试 /user-erc20-balances 或其他端点
+      toast('API 未返回代理地址，请手动在 Polymarket 个人资料中查看代理地址并填写', 'error');
+      console.log('完整响应:', JSON.stringify(data).slice(0, 500));
+      return;
+    }
+
+    // 验证是有效地址
+    if(!proxyAddr.startsWith('0x') || proxyAddr.length !== 42){
+      toast('返回的代理地址格式无效: ' + proxyAddr, 'error');
+      return;
+    }
+
+    // 如果代理地址就是 EOA，说明没有代理钱包
+    if(proxyAddr.toLowerCase() === address.toLowerCase()){
+      toast('你的账户没有代理钱包，可直接使用 EOA 地址作为 maker', 'info');
+      return;
+    }
+
+    walletState.funder = proxyAddr;
+    walletState.sigType = 1;  // 有代理钱包时自动设为 POLY_PROXY
+    $('funderInput').value = proxyAddr;
+    $('sigTypeSelect').value = '1';
+    saveWalletToStorage();
+    updateWalletUI(address, proxyAddr);
+    toast('代理钱包地址已获取: ' + proxyAddr.slice(0,6) + '...' + proxyAddr.slice(-4), 'success');
+
+  } catch(e){
+    toast('获取代理地址失败: ' + e.message + '。请手动在 Polymarket 个人资料中查看', 'error');
+  }
+}
+
+// ===== 测试 API Key =====
+async function testApiKey(){
+  if(!walletState.apiKey || !walletState.apiSecret){
+    toast('请先配置 API Key', 'error');
+    return;
+  }
+  try {
+    toast('正在测试 API Key...', 'info');
+
+    // 步骤0: 显示当前配置
+    console.log('===== L2 认证诊断 =====');
+    console.log('[诊断] EOA 地址:', walletState.address);
+    console.log('[诊断] 代理地址(funder):', walletState.funder || '(无)');
+    console.log('[诊断] sigType:', walletState.sigType);
+    console.log('[诊断] API Key:', walletState.apiKey);
+    console.log('[诊断] API Secret (前8字符):', walletState.apiSecret.slice(0, 8) + '...');
+    console.log('[诊断] API Passphrase:', walletState.apiPass ? '***' : '(空)');
+    console.log('[诊断] API Key 长度:', walletState.apiKey.length, '字符');
+    console.log('[诊断] API Key 是否为UUID格式:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(walletState.apiKey));
+
+    // 步骤1: 同步服务器时间
+    await syncServerTime();
+    console.log('[诊断] 服务器时间偏移:', serverTimeOffset, '秒');
+
+    // 步骤2: 先测试无认证请求（验证网络连通性）
+    try {
+      const timeResp = await fetch(CLOB_HOST + '/time');
+      const timeData = await timeResp.json();
+      console.log('[诊断] 网络连通性: OK, 服务器时间:', timeData.timestamp || timeData);
+    } catch(e) {
+      console.error('[诊断] ❌ 无法连接 CLOB API:', e.message);
+      toast('无法连接 CLOB API (网络问题)', 'error');
+      return;
+    }
+
+    // 步骤3: 测试 L2 认证
+    const method = 'GET';
+    const path = '/data/orders';
+    const headers = await getL2Headers(method, path);
+
+    // 调试：输出签名详情
+    const ts = headers['POLY_TIMESTAMP'];
+    const msg = ts + method + path;
+    console.log('[L2调试] signing message:', msg);
+    console.log('[L2调试] signature:', headers['POLY_SIGNATURE']);
+    console.log('[L2调试] full headers:', JSON.stringify(headers, null, 2));
+
+    const resp = await fetch(CLOB_HOST + path, { headers });
+    const text = await resp.text();
+
+    if(resp.ok){
+      let orderCount = 0;
+      try {
+        const data = JSON.parse(text);
+        const orders = data?.data || (Array.isArray(data) ? data : data?.orders) || [];
+        orderCount = orders.length;
+      } catch(e){}
+      toast(`API Key 验证成功！认证正常 (sigType=${walletState.sigType})，当前 ${orderCount} 个订单`, 'success');
+      console.log('[L2测试] ✅ 认证成功！sigType=' + walletState.sigType);
+    } else {
+      let errMsg = text.slice(0, 300);
+      try { errMsg = JSON.parse(text).errorMsg || JSON.parse(text).error || errMsg; } catch(e){}
+      toast('API Key 验证失败 (HTTP ' + resp.status + ', sigType=' + walletState.sigType + '): ' + errMsg, 'error');
+      console.error('[L2测试] ❌ 认证失败:', resp.status, errMsg);
+
+      // 自动诊断建议
+      if(resp.status === 401 && errMsg.toLowerCase().includes('invalid api key')){
+        console.warn('[诊断] ⚠️ API Key 无效！建议点击"重新获取 API Key"');
+        console.warn('[诊断] 可能原因: 1)Key从未成功创建 2)Key已过期 3)Key与当前地址不匹配');
+      }
+    }
+  } catch(e){
+    toast('测试失败: ' + e.message, 'error');
+  }
+}
+
+// ===== 重新获取 API Key（完整诊断版）=====
+async function redetectApiKey(){
+  if(typeof ethers === 'undefined'){
+    toast('ethers.js 未加载，请检查网络连接后刷新页面', 'error');
+    return;
+  }
+  const pk = $('pkInput').value.trim();
+  if(!pk){ toast('请先输入私钥', 'error'); return; }
+
+  try {
+    toast('正在重新获取 API Key（诊断模式）...', 'info');
+    let normalizedPk = pk;
+    if(!normalizedPk.startsWith('0x')) normalizedPk = '0x' + normalizedPk;
+    const wallet = new ethers.Wallet(normalizedPk);
+    const address = wallet.address;
+
+    console.log('===== 重新获取 API Key 诊断 =====');
+    console.log('[L1] EOA 地址:', address);
+
+    // 预检：先测试 L1 认证是否正常（调 GET /register）
+    try {
+      const preTs = Math.floor(Date.now() / 1000).toString();
+      const preNonce = '0';
+      const preSig = await signL1Auth(wallet, address, preTs, preNonce);
+      const preHeaders = {
+        'POLY_ADDRESS': address,
+        'POLY_SIGNATURE': preSig,
+        'POLY_TIMESTAMP': preTs,
+        'POLY_NONCE': preNonce
+      };
+      console.log('[L1预检] 调用 GET /register 验证 L1 认证...');
+      const preResp = await fetch('https://clob.polymarket.com/register', {
+        method: 'GET',
+        headers: preHeaders
+      });
+      const preText = await preResp.text();
+      console.log('[L1预检] /register 响应:', preResp.status, preText.slice(0, 300));
+      if(preResp.ok){
+        try {
+          const preData = JSON.parse(preText);
+          if(preData.proxy_address){
+            console.log('[L1预检] ✅ L1 认证正常！代理地址:', preData.proxy_address);
+            // 自动保存代理地址
+            walletState.funder = preData.proxy_address;
+            $('funderInput').value = preData.proxy_address;
+          }
+        } catch(e){}
+      } else {
+        console.error('[L1预检] ❌ L1 认证失败！HTTP', preResp.status);
+        toast('L1 认证预检失败 (HTTP ' + preResp.status + ')，私钥可能无效或签名有误', 'error');
+        return;
+      }
+    } catch(e) {
+      console.error('[L1预检] ❌ 无法连接 CLOB API:', e.message);
+      toast('无法连接 CLOB API: ' + e.message, 'error');
+      return;
+    }
+
+    // 先清除旧 Key
+    walletState.apiKey = null;
+    walletState.apiSecret = null;
+    walletState.apiPass = null;
+
+    // 第一步：尝试 POST /auth/api-key（创建新凭证）
+    const ts1 = Math.floor(Date.now() / 1000).toString();
+    const nonce = '0';
+    const sig1 = await signL1Auth(wallet, address, ts1, nonce);
+
+    const createHeaders = {
+      'POLY_ADDRESS': address,
+      'POLY_SIGNATURE': sig1,
+      'POLY_TIMESTAMP': ts1,
+      'POLY_NONCE': nonce,
+      'Content-Type': 'application/json'
+    };
+
+    console.log('[L1-create] 请求头:', createHeaders);
+
+    let data = null;
+    let usedMethod = '';
+
+    try {
+      const resp = await fetch('https://clob.polymarket.com/auth/api-key', {
+        method: 'POST',
+        headers: createHeaders
+      });
+      const result = await resp.json();
+      console.log('[L1-create] 响应:', resp.status, JSON.stringify(result).slice(0, 500));
+
+      if(resp.ok && result.apiKey){
+        data = result;
+        usedMethod = 'create';
+      } else {
+        console.log('[L1-create] 失败，尝试 derive...');
+        throw new Error('NEED_DERIVE');
+      }
+    } catch(e){
+      if(e.message === 'NEED_DERIVE' || e.message.includes('NEED_DERIVE')){
+        // 第二步：derive 已有凭证（GET /auth/derive-api-key）
+        const ts2 = Math.floor(Date.now() / 1000).toString();
+        const sig2 = await signL1Auth(wallet, address, ts2, nonce);
+
+        const deriveHeaders = {
+          'POLY_ADDRESS': address,
+          'POLY_SIGNATURE': sig2,
+          'POLY_TIMESTAMP': ts2,
+          'POLY_NONCE': nonce
+        };
+
+        console.log('[L1-derive] 请求头:', deriveHeaders);
+
+        const resp2 = await fetch('https://clob.polymarket.com/auth/derive-api-key', {
+          method: 'GET',
+          headers: deriveHeaders
+        });
+
+        const result2 = await resp2.text();
+        console.log('[L1-derive] 响应:', resp2.status, result2.slice(0, 500));
+
+        if(!resp2.ok){
+          throw new Error('Derive 失败 (HTTP ' + resp2.status + '): ' + result2.slice(0,200));
+        }
+
+        data = JSON.parse(result2);
+        usedMethod = 'derive';
+      } else {
+        throw e;
+      }
+    }
+
+    // 解析 API Key 响应
+    let apiKeyStr, apiSecretStr, apiPassStr;
+
+    if(Array.isArray(data.apiKey)){
+      const first = data.apiKey[0];
+      if(!first) throw new Error('API 返回空数组');
+      apiKeyStr = first.key || first.apiKey;
+      apiSecretStr = first.secret;
+      apiPassStr = first.passphrase;
+    } else {
+      apiKeyStr = data.apiKey;
+      apiSecretStr = data.secret;
+      apiPassStr = data.passphrase;
+    }
+
+    if(!apiKeyStr || !apiSecretStr){
+      throw new Error('API 返回数据缺少必要字段: ' + JSON.stringify(data).slice(0,300));
+    }
+
+    console.log('[L1] ✅ API Key 获取成功!');
+    console.log('[L1] apiKey:', apiKeyStr);
+    console.log('[L1] secret (前8字符):', apiSecretStr.slice(0, 8) + '...');
+    console.log('[L1] passphrase:', apiPassStr ? '***' : '(空)');
+    console.log('[L1] Key UUID格式校验:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(apiKeyStr) ? '✅合法UUID' : '❌非UUID格式');
+
+    walletState.pk = normalizedPk;
+    walletState.address = address;
+    walletState.apiKey = apiKeyStr;
+    walletState.apiSecret = apiSecretStr;
+    walletState.apiPass = apiPassStr;
+
+    $('apiKeyInput').value = walletState.apiKey;
+    $('apiSecretInput').value = walletState.apiSecret;
+    $('apiPassInput').value = walletState.apiPass || '';
+
+    saveWalletToStorage();
+    updateWalletUI(address, walletState.funder);
+    toast(`API Key 获取成功 (${usedMethod})，正在自动测试...`, 'success');
+
+    // 立即测试 L2 认证
+    setTimeout(() => testApiKey(), 1000);
+
+  } catch(e){
+    console.error('[L1] ❌ 获取 API Key 失败:', e);
+    toast('获取 API Key 失败: ' + e.message, 'error');
+  }
+}
+
+// L1 EIP-712 签名辅助函数
+async function signL1Auth(wallet, address, timestamp, nonce){
+  const domain = { name: 'ClobAuthDomain', version: '1', chainId: 137 };
+  const types = {
+    ClobAuth: [
+      { name: 'address', type: 'address' },
+      { name: 'timestamp', type: 'string' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'message', type: 'string' }
+    ]
+  };
+  const value = {
+    address: address,
+    timestamp: timestamp,
+    nonce: nonce,
+    message: 'This message attests that I control the given wallet'
+  };
+  return await wallet._signTypedData(domain, types, value);
+}
+
+// ===== HMAC-SHA256 签名 (Polymarket L2 认证) =====
+// 关键：1) secret 先 Base64 解码为原始字节 2) 签名结果用 URL-safe Base64 编码
+async function hmacSign(secretB64, message){
+  // 1. 将 URL-safe Base64 转为标准 Base64（用于 atob 解码）
+  let normalized = secretB64.replace(/-/g, '+').replace(/_/g, '/');
+  // 去除非 base64 字符（TypeScript 客户端兼容处理）
+  normalized = normalized.replace(/[^A-Za-z0-9+/=]/g, '');
+  const pad = normalized.length % 4;
+  if(pad > 0) normalized += '='.repeat(4 - pad);
+
+  // 2. Base64 解码 secret 为原始字节
+  const secretBytes = Uint8Array.from(atob(normalized), c => c.charCodeAt(0));
+
+  // 3. 用原始字节作为 HMAC 密钥
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', secretBytes, { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+
+  // 4. 返回 URL-safe Base64 编码的签名
+  // 关键：保留 = padding！TypeScript 客户端: "Must be url safe base64 encoding, but keep base64 = suffix"
+  const sigBytes = new Uint8Array(sig);
+  let binary = '';
+  sigBytes.forEach(b => binary += String.fromCharCode(b));
+  // URL-safe: +→-  /→_  但保留 = padding！
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+// ===== 服务器时间同步 =====
+let serverTimeOffset = 0; // 本地时间与服务器时间的偏移（秒）
+
+async function syncServerTime(){
+  try {
+    const localBefore = Math.floor(Date.now() / 1000);
+    const resp = await fetch(CLOB_HOST + '/time');
+    if(!resp.ok) return;
+    const data = await resp.json();
+    const localAfter = Math.floor(Date.now() / 1000);
+    const serverTs = parseInt(data.timestamp || data);
+    if(!serverTs) return;
+    // 用中间点估算网络延迟
+    const localMid = Math.floor((localBefore + localAfter) / 2);
+    serverTimeOffset = serverTs - localMid;
+    console.log('[时间同步] 服务器偏移:', serverTimeOffset, '秒');
+  } catch(e){
+    console.warn('[时间同步] 失败，使用本地时间:', e.message);
+  }
+}
+
+// ===== CLOB API L2 认证头 =====
+// L2 只需5个header：POLY_ADDRESS, POLY_API_KEY, POLY_SIGNATURE, POLY_TIMESTAMP, POLY_PASSPHRASE
+// 注意：L2 不需要 POLY_NONCE（那是 L1 的 header）
+async function getL2Headers(method, path, body=''){
+  if(!walletState.apiKey || !walletState.apiSecret) throw new Error('请先配置 API Key');
+  // 使用服务器同步后的时间戳
+  const timestamp = (Math.floor(Date.now() / 1000) + serverTimeOffset).toString();
+  const message = timestamp + method + path + body;
+  const signature = await hmacSign(walletState.apiSecret, message);
+  return {
+    'POLY_ADDRESS': walletState.address,
+    'POLY_API_KEY': walletState.apiKey,
+    'POLY_SIGNATURE': signature,
+    'POLY_TIMESTAMP': timestamp,
+    'POLY_PASSPHRASE': walletState.apiPass || '',
+    'Content-Type': 'application/json'
+  };
+}
+
+// ===== 下单逻辑 =====
+const CLOB_HOST = 'https://clob.polymarket.com';
+const CTF_EXCHANGE = '0xE111180000d2663C0091e4f400237545B87B996B';
+const NEG_RISK_EXCHANGE = '0xe2222d279d744050d28e00520010520000310F59';
+
+async function placeOrder(marketId, side){
+  if(!walletState.address || !walletState.pk){
+    toast('请先连接钱包', 'error');
+    $('walletPanel').classList.add('open');
+    return;
+  }
+
+  const amtInput = document.getElementById('buyAmt_' + marketId);
+  const amountUsdc = parseFloat(amtInput?.value || $('orderAmt').value) || parseFloat($('orderAmt').value);
+
+  const btn = document.getElementById('buyBtn_' + marketId);
+  if(btn){ btn.disabled = true; btn.textContent = '下单中...'; }
+  try {
+    await placeOrderInternal(marketId, side, amountUsdc);
+    toast(`${side === 'BUY' ? '买入' : '卖出'}成功! 可在订单中心查看`, 'success');
+  } catch(e){
+    toast('下单失败: ' + e.message, 'error');
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = side === 'BUY' ? '买入' : '卖出'; }
+  }
+}
+
+function getMaxOutcomeWithIndex(outcomes, prices){
+  let top = 0, name = '—', idx = 0;
+  outcomes.forEach((nm, i) => {
+    const p = +prices[i] || 0;
+    if(p > top){ top = p; name = nm; idx = i; }
+  });
+  return { prob: top, name, index: idx };
+}
+
+// ===== 批量下单逻辑 =====
+function updateBatchBar(){
+  const checked = document.querySelectorAll('.sel-checkbox:checked:not(#batchBar input)');
+  // 只统计表格内的勾选框（排除全选和浮动栏内的）
+  const allChecks = document.querySelectorAll('.tbl-wrap .sel-checkbox:checked');
+  const count = allChecks.length;
+  $('batchCount').textContent = count;
+  if(count > 0){
+    $('batchBar').classList.add('show');
+  } else {
+    $('batchBar').classList.remove('show');
+  }
+}
+
+function toggleSelectAll(headerCheckbox){
+  const tbl = headerCheckbox.closest('table');
+  if(!tbl) return;
+  const bodyChecks = tbl.querySelectorAll('tbody .sel-checkbox');
+  bodyChecks.forEach(c => { c.checked = headerCheckbox.checked; });
+  updateBatchBar();
+}
+
+function clearSelection(){
+  document.querySelectorAll('.sel-checkbox').forEach(c => { c.checked = false; });
+  updateBatchBar();
+}
+
+async function batchOrder(side){
+  const checked = document.querySelectorAll('.tbl-wrap .sel-checkbox:checked');
+  if(checked.length === 0){
+    toast('请先勾选要下单的市场', 'error');
+    return;
+  }
+  if(!walletState.address || !walletState.pk){
+    toast('请先连接钱包', 'error');
+    $('walletPanel').classList.add('open');
+    return;
+  }
+
+  const amountUsdc = parseFloat($('batchAmt').value) || parseFloat($('orderAmt').value) || 1;
+  let successCount = 0, failCount = 0;
+  toast(`开始批量${side==='BUY'?'买入':'卖出'} ${checked.length} 个市场...`, 'info');
+
+  for(const cb of checked){
+    const mid = cb.value;
+    try {
+      await placeOrderInternal(mid, side, amountUsdc);
+      successCount++;
+    } catch(e){
+      failCount++;
+      console.error('下单失败:', mid, e);
+    }
+  }
+  toast(`完成！成功 ${successCount}，失败 ${failCount}，可在订单中心查看`, failCount===0 ? 'success' : 'error');
+  clearSelection();
+}
+
+// 最大公约数
+function gcd(a, b){ return b === 0 ? a : gcd(b, a % b); }
+
+// placeOrder 内部复用函数 (V2 Order Format)
+async function placeOrderInternal(marketId, side, amountUsdcOverride){
+  const m = allMarketsCache.find(x => x.id === marketId);
+  if(!m) throw new Error('市场未找到: ' + marketId);
+
+  // 市价单：用户输入金额 * 1.02 溢价确保成交
+  const userAmount = amountUsdcOverride || parseFloat($('orderAmt').value) || 1;
+  const { prob, name, index } = getMaxOutcomeWithIndex(m._outcomes, m._prices);
+  const clobTokenIds = typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : (m.clobTokenIds || []);
+  if(!clobTokenIds[index]) throw new Error('市场缺少 clobTokenIds: ' + marketId);
+
+  const tokenId = clobTokenIds[index];
+  const negRisk = !!m.negRisk;
+
+  // 从 CLOB API 获取实际可成交价格
+  let rawPrice = prob;
+  try {
+    const priceResp = await fetch(CLOB_HOST + '/price?token_id=' + encodeURIComponent(tokenId) + '&side=' + side);
+    if(priceResp.ok){
+      const priceData = await priceResp.json();
+      const p = parseFloat(priceData.price);
+      if(p > 0 && p < 1) rawPrice = p;
+    }
+  } catch(e){ console.warn('[下单] 获取CLOB价格失败，使用概率估算:', e); }
+
+  // 市价单加 2% 溢价，round 到 0.01 tick (部分市场最小 tick 为 0.01)
+  // BUY: 价格上浮(round up)确保吃到卖单；SELL: 价格下浮(round down)确保吃到买单
+  const adjustedRaw = side === 'BUY' ? rawPrice * 1.02 : rawPrice * 0.98;
+  const priceTicks = side === 'BUY'
+    ? Math.ceil(adjustedRaw * 100)   // BUY 向上取整到 0.01
+    : Math.floor(adjustedRaw * 100); // SELL 向下取整到 0.01
+  const price = priceTicks / 100;
+  if(price <= 0 || price >= 1) throw new Error('价格超出范围(0,1): ' + price);
+  console.log('[下单] 成交价格:', price, '(2%溢价, tick=0.01, side=' + side + ')');
+
+  const wallet = new ethers.Wallet(walletState.pk);
+  const verifyingContract = negRisk ? NEG_RISK_EXCHANGE : CTF_EXCHANGE;
+
+  // V2: maker = funder(代理钱包地址), signer = EOA 地址
+  const makerAddress = walletState.funder || walletState.address;
+  const signerAddress = walletState.address;
+
+  // V2: salt 使用安全范围内的随机数 (避免 JS Number 精度丢失)
+  const salt = ethers.BigNumber.from(Date.now()).mul(1000).add(Math.floor(Math.random() * 1000));
+  // 用整数比例构造 makerAmount/takerAmount，确保 price = priceTicks/100 精确 (0.01 tick)
+  // makerAmount = priceTicks * k, takerAmount = 100 * k
+  // → price = makerAmount / takerAmount = priceTicks/100 ✓ (精确满足 0.01 tick)
+  //
+  // V2 精度要求（微单位 1e6）:
+  //   BUY:  makerAmount(USDC)   最多5位小数 → raw 必须是 10 的倍数
+  //         takerAmount(shares) 最多2位小数 → raw 必须是 10000 的倍数
+  //   SELL: makerAmount(shares) 最多2位小数 → raw 必须是 10000 的倍数
+  //         takerAmount(USDC)   最多5位小数 → raw 必须是 10 的倍数
+  // k 必须是 10000 的倍数确保满足精度要求
+  const TICK_BASE = 100;
+  let makerAmount, takerAmount;
+  // 正确公式: price = makerAmount / takerAmount = (priceTicks * k) / (TICK_BASE * k) = priceTicks / TICK_BASE
+  // k = userAmount / price = userAmount * 1e6 / (priceTicks / 100 * 100) = userAmount * 1e6 / priceTicks
+  // Polymarket 最小下单数量: 5 shares = 5000000 微单位
+  if(side === 'BUY'){
+    // takerAmount = TICK_BASE * k >= 5000000 → k >= 50000
+    const kMin = 50000;
+    const kTarget = Math.round(userAmount * 1e6 / priceTicks / 10000) * 10000;
+    const k = Math.max(kMin, kTarget);
+    makerAmount = ethers.BigNumber.from(priceTicks).mul(k);
+    takerAmount = ethers.BigNumber.from(TICK_BASE).mul(k);
+    const k = Math.max(kMin, kTarget);
+    makerAmount = ethers.BigNumber.from(priceTicks).mul(k);
+    takerAmount = ethers.BigNumber.from(TICK_BASE).mul(k);
+  } else {
+    // SELL: k 必须是 priceTicks*k 为 10000 的倍数的最小步长，最小 5 shares
+    const kStep = Math.ceil(10000 / priceTicks) * priceTicks;
+    const kMin = Math.max(kStep, Math.ceil(5 * 1e6 / priceTicks / kStep) * kStep);
+    const kTarget = Math.round(userAmount * 1e6 / priceTicks / kStep) * kStep;
+    const k = Math.max(kMin, kTarget);
+    makerAmount = ethers.BigNumber.from(priceTicks).mul(k);
+    takerAmount = ethers.BigNumber.from(TICK_BASE).mul(k);
+  }
+  console.log('[下单] 用户输入:', userAmount, 'USDC, 价格:', price, ', 实际成交:', (makerAmount.toNumber() / 1e6).toFixed(5), 'USDC /', (takerAmount.toNumber() / 1e6).toFixed(2), 'shares');
+
+  const timestamp = Date.now().toString();
+  const BYTES32_ZERO = '0x0000000000000000000000000000000000000000000000000000000000000000';
+  const sigType = walletState.sigType !== undefined ? walletState.sigType : 2;
+
+  // V2 EIP-712 Order struct (11 fields, no taker/nonce/feeRatePpm)
+  // maker = funder(代理钱包), signer = EOA
+  const orderStruct = {
+    salt: salt.toString(),
+    maker: makerAddress,
+    signer: signerAddress,
+    tokenId: tokenId,
+    makerAmount: makerAmount.toString(),
+    takerAmount: takerAmount.toString(),
+    side: side === 'BUY' ? 0 : 1,
+    signatureType: sigType,
+    timestamp: timestamp,
+    metadata: BYTES32_ZERO,
+    builder: BYTES32_ZERO
+  };
+
+  // V2 EIP-712 domain (version = "2")
+  const domain = {
+    name: 'Polymarket CTF Exchange',
+    version: '2',
+    chainId: 137,
+    verifyingContract: verifyingContract
+  };
+
+  // V2 EIP-712 types (11 fields)
+  const types = {
+    Order: [
+      { name: 'salt', type: 'uint256' },
+      { name: 'maker', type: 'address' },
+      { name: 'signer', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'makerAmount', type: 'uint256' },
+      { name: 'takerAmount', type: 'uint256' },
+      { name: 'side', type: 'uint8' },
+      { name: 'signatureType', type: 'uint8' },
+      { name: 'timestamp', type: 'uint256' },
+      { name: 'metadata', type: 'bytes32' },
+      { name: 'builder', type: 'bytes32' }
+    ]
+  };
+
+  const signature = await wallet._signTypedData(domain, types, orderStruct);
+
+  // 调试日志：可在浏览器控制台查看签名详情
+  console.log('[下单调试] EIP-712 domain:', domain);
+  console.log('[下单调试] orderStruct:', orderStruct);
+  console.log('[下单调试] signature:', signature);
+  console.log('[下单调试] sigType:', sigType, 'maker:', makerAddress, 'signer:', signerAddress);
+
+  // V2 API payload - maker = funder, signer = EOA
+  const orderPayload = {
+    order: {
+      salt: parseInt(salt.toString()),
+      maker: makerAddress,
+      signer: signerAddress,
+      tokenId: tokenId,
+      makerAmount: makerAmount.toString(),
+      takerAmount: takerAmount.toString(),
+      side: side,
+      expiration: '0',
+      signatureType: sigType,
+      timestamp: timestamp,
+      metadata: BYTES32_ZERO,
+      builder: BYTES32_ZERO,
+      signature: signature
+    },
+    owner: walletState.apiKey,
+    orderType: 'FOK',
+    deferExec: false,
+    postOnly: false
+  };
+
+  const body = JSON.stringify(orderPayload);
+  const headers = await getL2Headers('POST', '/order', body);
+
+  const resp = await fetch(CLOB_HOST + '/order', {
+    method: 'POST',
+    headers: headers,
+    body: body
+  });
+
+  const result = await resp.json();
+  if(!resp.ok || !result.success){
+    const errMsg = result.errorMsg || result.error || result.message || JSON.stringify(result);
+    console.error('下单失败详情:', { status: resp.status, body: result });
+    throw new Error(errMsg);
+  }
+  // IOC 可能部分成交，提示用户
+  const filledSize = result.size ? parseFloat(result.size) : 0;
+  if(filledSize > 0 && filledSize < amountUsdc){
+    console.log('[下单] IOC 部分成交:', filledSize, '/', amountUsdc, 'USDC');
+  }
+  return result;
+}
+
+// ===== 订单中心逻辑 =====
+let ocOpen = false;
+let ocCache = []; // 缓存订单数据
+
+function toggleOrderCenter(){
+  const panel = $('ocPanel');
+  ocOpen = !ocOpen;
+  if(ocOpen){
+    panel.classList.add('open');
+    loadOrders();
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+function onOcFilterChange(){
+  const filter = $('ocFilter').value;
+  if(filter === 'positions'){
+    loadPositions();
+  } else {
+    loadOrders();
+  }
+}
+
+// ===== 持仓查询 =====
+async function loadPositions(){
+  if(!walletState.address || !walletState.apiKey || !walletState.apiSecret){
+    $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">🔑</div>请先连接钱包并配置 API Key</div>';
+    return;
+  }
+
+  $('ocBody').innerHTML = '<div class="loading"><div class="spin"></div><div>正在从成交记录计算持仓...</div></div>';
+
+  try {
+    await syncServerTime();
+
+    // 打印诊断信息
+    console.log('[持仓诊断] EOA地址:', walletState.address);
+    console.log('[持仓诊断] 代理地址:', walletState.funder);
+    console.log('[持仓诊断] 查询用地址:', walletState.funder || walletState.address);
+
+    const headers = await getL2Headers('GET', '/trades');
+    const resp = await fetch(CLOB_HOST + '/trades', { headers });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const data = await resp.json();
+    const trades = (data?.data || data || []).slice(0, 200);
+
+    console.log('[持仓] 原始API返回:', JSON.stringify(trades.slice(0, 3)).slice(0, 500));
+    console.log('[持仓] 成交记录条数:', trades.length);
+
+    if(trades.length === 0){
+      // 尝试查询更多字段
+      console.log('[持仓] 完整响应:', JSON.stringify(data).slice(0, 1000));
+      $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">📊</div>API返回空记录<br><small style="color:#888">请检查控制台日志</small></div>';
+      return;
+    }
+
+    // 按 tokenId 聚合计算持仓
+    const posMap = {};
+    trades.forEach(t => {
+      const tid = t.tokenId || t.assetId || t.conditionId || '';
+      if(!tid) return;
+      const size = parseFloat(t.size || t.takerAmount || 0) / 1e6;
+      const price = parseFloat(t.price || 0);
+      if(!posMap[tid]) posMap[tid] = { tokenId: tid, qtyBought: 0, qtySold: 0, cost: 0 };
+      if(t.side === 'BUY'){
+        posMap[tid].qtyBought += size;
+        posMap[tid].cost += size * price;
+      } else {
+        posMap[tid].qtySold += size;
+      }
+    });
+
+    const positions = Object.values(posMap).map(p => ({
+      ...p,
+      netPosition: p.qtyBought - p.qtySold,
+      avgPrice: p.qtyBought > 0 ? p.cost / p.qtyBought : 0
+    })).filter(p => p.netPosition > 0); // 只保留净持仓 > 0
+
+    // 过滤：只显示仍持有仓位的 (netPosition > 0)
+    const openPositions = positions.filter(p => p.netPosition > 0);
+    console.log('[持仓] 总记录:', positions.length, '条, 持仓中:', openPositions.length, '条');
+
+    if(positions.length === 0){
+      $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">📊</div>成交记录无法解析<br><small style="color:#888">请打开控制台查看日志</small></div>';
+      return;
+    }
+
+    renderPositions(openPositions);
+  } catch(e){
+    console.error('[持仓]', e);
+    $('ocBody').innerHTML = `<div class="err"><strong>加载持仓失败</strong><br><small>${e.message}</small></div>`;
+  }
+}
+
+function renderPositions(positions){
+  $('ocTotal').textContent = positions.length;
+
+  // 计算持仓总值
+  let totalVal = 0;
+  positions.forEach(p => {
+    const shares = Math.abs(parseFloat(p.NetPosition || p.qtyBought || p.qtySold || p.shares || 0));
+    const price = parseFloat(p.price || p.lastPrice || p.costBasis || 0.5);
+    totalVal += shares * price;
+  });
+  $('ocValue').textContent = '$' + totalVal.toFixed(2);
+
+  if(positions.length === 0){
+    $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">📊</div>暂无持仓<br><small style="color:#888">买入股票后会显示在此处</small></div>';
+    return;
+  }
+
+  const rows = positions.map(p => {
+    const tokenId = p.tokenId || 'unknown';
+    const netPos = parseFloat(p.netPosition || 0);
+    const qtyBought = parseFloat(p.qtyBought || 0);
+    const qtySold = parseFloat(p.qtySold || 0);
+    const cost = parseFloat(p.cost || 0);
+    const avgPrice = parseFloat(p.avgPrice || 0);
+    const side = netPos >= 0 ? 'BUY' : 'SELL';
+    const unrealized = netPos * 0.5 - cost; // 粗略估算
+
+    const sideLabel = side === 'BUY' ? '持有' : '卖出';
+    const sideClass = side === 'BUY' ? 'side-buy' : 'side-sell';
+    const displayShares = Math.abs(netPos);
+    const displayPrice = avgPrice > 0 ? avgPrice : 0.5;
+
+    return `<tr>
+      <td class="col-q"><div class="q-cell">${tokenId.slice(0, 16)}...</div></td>
+      <td class="oc-col-side"><span class="${sideClass}">${sideLabel}</span></td>
+      <td class="oc-col-price">${displayPrice.toFixed(4)}</td>
+      <td class="oc-col-size">${displayShares.toFixed(2)} shares<br><span style="font-size:10px;color:#888">成本: $${cost.toFixed(2)}</span></td>
+      <td class="oc-col-status"><span style="color:${unrealized >= 0 ? '#166534' : '#991b1b'}">${unrealized >= 0 ? '+' : ''}$${unrealized.toFixed(2)}</span></td>
+      <td class="oc-col-time">买${qtyBought.toFixed(2)}/卖${qtySold.toFixed(2)}</td>
+      <td class="oc-col-action">—</td>
+    </tr>`;
+  }).join('');
+
+  $('ocBody').innerHTML = `<div class="oc-tbl-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-q">资产</th>
+        <th class="oc-col-side">方向</th>
+        <th class="oc-col-price">价格</th>
+        <th class="oc-col-size">数量</th>
+        <th class="oc-col-status">已实现盈亏</th>
+        <th class="oc-col-time">更新时间</th>
+        <th class="oc-col-action">操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+async function loadOrders(){
+  if(!walletState.address || !walletState.apiKey || !walletState.apiSecret){
+    $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">🔑</div>请先连接钱包并配置 API Key</div>';
+    return;
+  }
+
+  $('ocBody').innerHTML = '<div class="loading"><div class="spin"></div><div>正在获取订单数据...</div></div>';
+
+  try {
+    const filter = $('ocFilter').value;
+    await syncServerTime();
+
+    // 分页拉取辅助函数
+    const END_CURSOR = 'LTE=';
+    async function fetchAllPages(baseUrl){
+      let all = [];
+      let nextCursor = '';
+      for(let i = 0; i < 20; i++){
+        const path = nextCursor
+          ? baseUrl + '?next_cursor=' + encodeURIComponent(nextCursor)
+          : baseUrl;
+        const headers = await getL2Headers('GET', path);
+        const resp = await fetch(CLOB_HOST + path, { headers });
+        if(!resp.ok) {
+          console.warn('[订单] ' + baseUrl + ' 返回 HTTP', resp.status);
+          break;
+        }
+        const data = await resp.json();
+        let page = [];
+        if(data && data.data) page = data.data;
+        else if(Array.isArray(data)) page = data;
+        all = all.concat(page);
+        const cursor = data && data.next_cursor ? data.next_cursor : '';
+        if(!cursor || cursor === END_CURSOR || page.length === 0) break;
+        nextCursor = cursor;
+      }
+      return all;
+    }
+
+    // 1. 拉取活跃挂单 (GET /data/orders)
+    const openOrders = await fetchAllPages('/data/orders');
+    console.log('[订单中心] 活跃挂单:', openOrders.length, '条');
+
+    // 2. 拉取成交记录 (GET /trades) — IOC 市价单成交后不在 /data/orders 中
+    const trades = await fetchAllPages('/trades');
+    console.log('[订单中心] 成交记录:', trades.length, '条');
+
+    // 合并：挂单用原始格式，成交记录转为订单显示格式
+    let allOrders = [];
+
+    // 活跃挂单
+    openOrders.forEach(o => {
+      const side = (o.side === 'BUY' || o.side === 0 || o.side === '0') ? 'BUY' : 'SELL';
+      const price = parseFloat(o.price || 0);
+      let usdcAmount = 0, shares = 0;
+      if(side === 'BUY'){
+        usdcAmount = parseFloat(o.originalAmount || o.makerAmount || 0) / 1e6;
+        shares = parseFloat(o.takerAmount || o.size || 0) / 1e6;
+      } else {
+        usdcAmount = parseFloat(o.originalAmount || o.takerAmount || 0) / 1e6;
+        shares = parseFloat(o.makerAmount || o.size || 0) / 1e6;
+      }
+      allOrders.push({
+        id: o.id || o.orderID || '',
+        side, price, usdcAmount, shares,
+        status: (o.status || '').toUpperCase(),
+        assetName: o.assetName || o.marketName || o.tokenId || '—',
+        createdAt: o.createdAt || '',
+        source: 'order'
+      });
+    });
+
+    // 成交记录
+    trades.forEach(t => {
+      const side = (t.side === 'BUY' || t.side === 0 || t.side === '0') ? 'BUY' : 'SELL';
+      const price = parseFloat(t.price || 0);
+      const size = parseFloat(t.size || 0);
+      const usdcAmount = price > 0 && size > 0 ? (side === 'BUY' ? size * price : size * price) : 0;
+      allOrders.push({
+        id: t.id || t.tradeID || '',
+        side, price,
+        usdcAmount: parseFloat(t.originalAmount || 0) / 1e6 || usdcAmount,
+        shares: size,
+        status: 'MATCHED',
+        assetName: t.assetName || t.marketName || t.tokenId || '—',
+        createdAt: t.matchTime || t.createdAt || t.timestamp || '',
+        source: 'trade'
+      });
+    });
+
+    // 按时间倒序排列
+    allOrders.sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    console.log('[订单中心] 合并后共', allOrders.length, '条记录');
+    ocCache = allOrders;
+
+    // 按筛选条件过滤
+    let filtered = allOrders;
+    if(filter === 'live') filtered = allOrders.filter(o => o.status === 'LIVE');
+    else if(filter === 'matched') filtered = allOrders.filter(o => o.status === 'MATCHED');
+
+    renderOrders(filtered);
+  } catch(e){
+    $('ocBody').innerHTML = `<div class="err"><strong>加载订单失败</strong><br><small>${e.message}</small><br><small style="color:#888;display:block;margin-top:6px">请确保已配置 API Key 并刷新</small></div>`;
+  }
+}
+
+function renderOrders(orders){
+  $('ocTotal').textContent = orders.length;
+
+  // 计算持仓总值
+  let totalVal = 0;
+  orders.forEach(o => { totalVal += o.usdcAmount || 0; });
+  $('ocValue').textContent = '$' + totalVal.toFixed(2);
+
+  if(orders.length === 0){
+    $('ocBody').innerHTML = '<div class="empty-cat"><div class="empty-icon">📭</div>暂无订单</div>';
+    return;
+  }
+
+  const rows = orders.map(o => {
+    const sideLabel = o.side === 'BUY' ? '买入' : '卖出';
+    const sideClass = o.side === 'BUY' ? 'side-buy' : 'side-sell';
+
+    let statusClass = 'status-live', statusLabel = '挂单中';
+    if(o.status === 'MATCHED'){ statusClass = 'status-matched'; statusLabel = '已成交'; }
+    else if(o.status === 'CANCELLED'){ statusClass = 'status-cancelled'; statusLabel = '已取消'; }
+
+    const createdAt = o.createdAt ? new Date(o.createdAt).toLocaleString('zh-CN') : '—';
+    const canCancel = o.status === 'LIVE' && o.id;
+    const sourceTag = o.source === 'trade' ? ' <span style="font-size:9px;color:#888">[成交]</span>' : '';
+
+    return `<tr>
+      <td class="col-q"><div class="q-cell" title="${(o.assetName).replace(/"/g,'&quot;')}">${o.assetName}${sourceTag}</div></td>
+      <td class="oc-col-side"><span class="${sideClass}">${sideLabel}</span></td>
+      <td class="oc-col-price">${o.price > 0 ? o.price.toFixed(4) : '—'}</td>
+      <td class="oc-col-size">${o.shares > 0 ? o.shares.toFixed(2) + ' shares' : '—'}<br><span style="font-size:10px;color:#888">≈ $${(o.usdcAmount||0).toFixed(2)}</span></td>
+      <td class="oc-col-status"><span class="${statusClass}">${statusLabel}</span></td>
+      <td class="oc-col-time">${createdAt}</td>
+      <td class="oc-col-action">${canCancel ? `<button class="cancel-btn" onclick="cancelOrder('${o.id}')">取消</button>` : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  $('ocBody').innerHTML = `<div class="oc-tbl-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-q">市场/资产</th>
+        <th class="oc-col-side">方向</th>
+        <th class="oc-col-price">价格</th>
+        <th class="oc-col-size">数量</th>
+        <th class="oc-col-status">状态</th>
+        <th class="oc-col-time">时间</th>
+        <th class="oc-col-action">操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+async function cancelOrder(orderId){
+  if(!orderId) return;
+  try {
+    const headers = await getL2Headers('DELETE', '/order');
+    const resp = await fetch(CLOB_HOST + '/order?orderID=' + encodeURIComponent(orderId), {
+      method: 'DELETE',
+      headers: headers
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const result = await resp.json();
+    toast('订单已取消: ' + orderId.slice(0,10) + '...', 'success');
+    loadOrders(); // 刷新列表
+  } catch(e){
+    toast('取消失败: ' + e.message, 'error');
+  }
+}
+
+// ===== 工具函数 =====
+function fmtVol(v){
+  v = +v || 0;
+  if(v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+  if(v >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
+  return '$' + Math.round(v);
+}
+
+function fmtCountdown(dt){
+  if(!dt) return '—';
+  const d = new Date(dt).getTime() - Date.now();
+  if(d <= 0) return '已结束';
+  const h = Math.floor(d/3600000), m = Math.floor((d%3600000)/60000);
+  if(h >= 24){ const days=Math.floor(h/24); return days+'天'+(h%24)+'h后' }
+  if(h > 0) return h+'h'+m+'m后';
+  return m+'m后';
+}
+
+function getMaxOutcome(outcomes, prices){
+  const { prob, name } = getMaxOutcomeWithIndex(outcomes, prices);
+  return { prob, name };
+}
+
+function renderTable(markets, catColor){
+  const lim = parseInt($('limit').value) || 10;
+  const defaultAmt = $('orderAmt').value || '1';
+  const rows = markets.slice(0, lim).map(m => {
+    const outcomes = m._outcomes;
+    const prices   = m._prices;
+    const { prob, name } = getMaxOutcome(outcomes, prices);
+    const pct = Math.round(prob * 100);
+    const isHigh = pct >= 85;
+    const vol = +m.volumeNum || +m.volume || 0;
+    const evSlug = m._evSlug || '';
+    const mSlug  = m.slug || m.id;
+    const url    = evSlug
+      ? 'https://polymarket.com/event/' + evSlug + '/' + mSlug
+      : 'https://polymarket.com/event/' + mSlug;
+    const mid = m.id;
+    return `<tr>
+      <td class="col-sel"><input type="checkbox" class="sel-checkbox" value="${mid}" onchange="updateBatchBar()"></td>
+      <td class="col-q"><div class="q-cell" onclick="window.open('${url}','_blank')" title="${(m.question||'').replace(/"/g,'&quot;')}">${m.question || '—'}</div></td>
+      <td class="col-out"><span class="outcome-tag ${isHigh?'':'lo'}" title="${name}">${name}</span></td>
+      <td class="col-prob">
+        <div class="prob-wrap">
+          <div class="pbar-mini"><div class="pbar-fill" style="width:${pct}%;background:${catColor}"></div></div>
+          <span class="prob-num ${isHigh?'hi':'lo'}">${pct}%</span>
+        </div>
+      </td>
+      <td class="col-cd"><span class="cd">${fmtCountdown(m.endDate)}</span></td>
+      <td class="col-vol"><span class="vol">${fmtVol(vol)}</span></td>
+      <td class="col-link"><a href="${url}" target="_blank" class="link-btn">↗</a></td>
+      <td class="col-buy">
+        <div class="buy-row">
+          $<input class="buy-amt" id="buyAmt_${mid}" type="number" value="${defaultAmt}" min="1">
+          <button class="buy-btn" id="buyBtn_${mid}" onclick="placeOrder('${mid}','BUY')">买入</button>
+          <button class="buy-btn sell" onclick="placeOrder('${mid}','SELL')">卖出</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-sel"><input type="checkbox" class="sel-checkbox" id="selAll_${catColor}" onchange="toggleSelectAll(this)"></th>
+        <th class="col-q">市场问题</th>
+        <th class="col-out">领先选项</th>
+        <th class="col-prob">胜率</th>
+        <th class="col-cd">剩余时间</th>
+        <th class="col-vol">交易量</th>
+        <th class="col-link">链接</th>
+        <th class="col-buy">下单(限价)</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderAll(data, tab){
+  const content = $('content');
+  const allCats = [...CATEGORIES, CAT_OTHER];
+  const cats = tab === 'all' ? allCats : allCats.filter(c => c.key === tab);
+  const lim = parseInt($('limit').value) || 10;
+  let html = '';
+  for(const cat of cats){
+    const list = data[cat.key] || [];
+    const isEmpty = list.length === 0;
+    html += `<div class="cat-sec">
+      <div class="cat-hd">
+        <div class="cat-dot" style="background:${cat.color}"></div>
+        <span class="cat-name">${cat.name}</span>
+        <span class="cat-cnt">${isEmpty ? '0 个市场' : list.length + ' 个市场（展示 ' + Math.min(list.length, lim) + ' 条）'}</span>
+      </div>
+      ${isEmpty
+        ? '<div class="empty-cat"><div class="empty-icon">∅</div>该分类暂无符合当前筛选条件的市场</div>'
+        : renderTable(list, cat.color)}
+    </div>`;
+  }
+  content.innerHTML = html || '<div class="empty-cat"><div class="empty-icon">📊</div>暂无符合条件的市场</div>';
+}
+
+function renderTabs(data){
+  const wrap = $('tabsWrap'), el = $('tabs');
+  const allCats = [...CATEGORIES, CAT_OTHER];
+  const total = Object.values(data).reduce((s,a) => s+a.length, 0);
+  wrap.style.display = 'block';
+  let h = `<div class="tab ${curTab==='all'?'active':''}" onclick="switchTab('all')">全部<span class="tc">${total}</span></div>`;
+  for(const cat of allCats){
+    const cnt = (data[cat.key]||[]).length;
+    const a = curTab===cat.key ? 'active' : '';
+    h += `<div class="tab ${a}" onclick="switchTab('${cat.key}')">${cat.name}<span class="tc">${cnt}</span></div>`;
+  }
+  el.innerHTML = h;
+}
+
+function switchTab(t){
+  curTab = t;
+  renderTabs(grouped);
+  renderAll(grouped, t);
+}
+
+function updateMetrics(data){
+  const all = Object.values(data).flat();
+  const nonEmptyCats = Object.values(data).filter(v => v.length > 0).length;
+  $('mTotal').textContent = all.length;
+  $('mCats').textContent  = CATEGORIES.length + '（' + nonEmptyCats + ' 有数据）';
+  let sp=0, sc=0, sv=0;
+  all.forEach(m => {
+    const mx = Math.max(...m._prices.map(p => +p||0));
+    if(mx > 0){ sp += mx; sc++; }
+    sv += +m.volumeNum || +m.volume || 0;
+  });
+  $('mAvg').textContent = sc ? Math.round(sp/sc*100)+'%' : '—';
+  $('mVol').textContent = fmtVol(sv);
+}
+
+async function load(){
+  const btn = $('rfBtn');
+  btn.disabled = true; btn.textContent = '加载中...';
+  status('b','拉取市场数据...');
+  prog(5);
+  $('content').innerHTML = '<div class="loading"><div class="spin"></div><div>正在获取 Polymarket 数据...</div></div>';
+  $('tabsWrap').style.display = 'none';
+
+  const minP     = parseFloat($('minP').value) / 100;
+  const maxP     = parseFloat($('maxP').value) / 100;
+  const hours    = parseInt($('endRange').value);
+  const now      = new Date();
+  const endMin   = now.toISOString();
+  const endMax   = hours > 0 ? new Date(now.getTime() + hours * 3600000).toISOString() : null;
+
+  const endTxt = hours > 0
+    ? (hours < 24 ? hours + '小时内' : Math.round(hours/24) + '天内')
+    : '不限时间';
+  const minVolVal = parseInt($('minVol').value) || 0;
+  const volTxt = minVolVal > 0 ? ` & 交易量 ≥ $${minVolVal >= 1e6 ? (minVolVal/1e6)+'M' : (minVolVal/1e3)+'K'}` : '';
+  $('subTitle').textContent = `${endTxt}结束 & 胜率 ${Math.round(minP*100)}~${Math.round(maxP*100)}%${volTxt}，每分类最多${$('limit').value}条`;
+
+  try {
+    prog(10);
+
+    let allEvents = [];
+    let offset = 0;
+    const pageSize = 100;
+    const maxPages = 10;
+
+    for(let page = 0; page < maxPages; page++){
+      status('b', `拉取第 ${page+1} 页事件数据...`);
+      prog(10 + page * 6);
+      const paramsObj = {
+        active: 'true', closed: 'false',
+        end_date_min: endMin,
+        limit: String(pageSize),
+        offset: String(offset),
+        order: 'end_date_asc',
+        ascending: 'true'
+      };
+      if(endMax) paramsObj.end_date_max = endMax;
+      const params = new URLSearchParams(paramsObj);
+      const resp = await fetch('https://gamma-api.polymarket.com/events?' + params, {
+        headers: { Accept: 'application/json' }
+      });
+      if(!resp.ok) throw new Error('HTTP ' + resp.status);
+      const batch = await resp.json();
+      const arr = Array.isArray(batch) ? batch : (batch.events || batch.data || []);
+      allEvents = allEvents.concat(arr);
+      if(arr.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    prog(75); status('b', `解析 ${allEvents.length} 个事件...`);
+
+    let allMarkets = [];
+    allEvents.forEach(ev => {
+      const catKey = classifyEvent(ev.tags);
+      const evSlug = ev.slug || '';
+      const markets = ev.markets || [];
+      markets.forEach(m => {
+        m._catKey  = catKey;
+        m._evSlug  = evSlug;
+        m._prices   = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : (m.outcomePrices || []);
+        m._outcomes = typeof m.outcomes      === 'string' ? JSON.parse(m.outcomes)      : (m.outcomes || ['Yes','No']);
+        m._clobTokenIds = typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : (m.clobTokenIds || []);
+      });
+      allMarkets = allMarkets.concat(markets);
+    });
+
+    prog(85); status('b', `筛选 ${allMarkets.length} 个市场...`);
+
+    const minVol = parseInt($('minVol').value) || 0;
+    const filtered = allMarkets.filter(m => {
+      if(!m.active || m.closed || m.archived) return false;
+      if(!m._prices.length) return false;
+      const mx = Math.max(...m._prices.map(p => +p||0));
+      if(mx < minP || mx > maxP) return false;
+      const vol = +m.volumeNum || +m.volume || 0;
+      if(vol < minVol) return false;
+      return true;
+    });
+
+    // 缓存所有市场数据用于下单
+    allMarketsCache = filtered;
+
+    prog(90); status('b', `分类整理 ${filtered.length} 条...`);
+
+    grouped = {};
+    CATEGORIES.forEach(c => { grouped[c.key] = []; });
+    grouped[CAT_OTHER.key] = [];
+
+    filtered.forEach(m => {
+      const key = m._catKey;
+      if(!grouped[key]) grouped[key] = [];
+      grouped[key].push(m);
+    });
+
+    prog(95);
+    updateMetrics(grouped);
+    renderTabs(grouped);
+    renderAll(grouped, curTab);
+    $('lupd').textContent = now.toLocaleTimeString('zh-CN');
+    status('g', `已加载 ${filtered.length} 个符合条件的市场（共 ${allMarkets.length} 个）`);
+    prog(100);
+    setTimeout(() => prog(0), 700);
+
+  } catch(e){
+    console.error(e);
+    status('r', '加载失败');
+    prog(0);
+    $('content').innerHTML = `<div class="err"><strong>加载失败</strong><br><small>${e.message}</small><br><small style="color:#888;display:block;margin-top:6px">请检查网络连接（是否需要 VPN）后重试</small><br><button class="btn" onclick="load()" style="margin-top:10px">重试</button></div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '刷新数据';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadWalletFromStorage();
+  load();
+});
+setInterval(() => { if(document.visibilityState === 'visible') load(); }, 5 * 60 * 1000);
+</script>
+</body>
+</html>

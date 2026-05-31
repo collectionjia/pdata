@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markets | Polymarket Active</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f9fb;color:#1a1a2e;font-size:13px;line-height:1.5;padding-bottom:88px}
+a{color:inherit;text-decoration:none}
+a:hover{color:#0066ff}
+
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,#2e5cff,#6b4ce6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+.brand-title{font-size:15px;font-weight:600}
+.brand-sub{font-size:11px;color:#6b7280}
+.topbar-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap;flex:1;min-width:0}
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.topbar-nav{display:flex;gap:4px;padding:4px;background:#f3f4f6;border-radius:10px}
+.topbar-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;color:#6b7280;white-space:nowrap}
+.topbar-tab:hover{color:#111827;background:#fff}
+.topbar-tab.on{background:#fff;color:#2563eb;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.filter-chip-link{background:#fff7ed;border-color:#fdba74;color:#c2410c;text-decoration:none;display:inline-block}
+.filter-chip-link:hover{background:#ffedd5;color:#9a3412}
+
+.hero{padding:20px 20px 12px;max-width:1400px;margin:0 auto}
+.hero h1{font-size:22px;font-weight:600;margin-bottom:4px}
+.hero p{color:#6b7280;font-size:13px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:0 20px 16px;max-width:1400px;margin:0 auto}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px}
+.stat-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:600;color:#111827}
+
+.toolbar{max-width:1400px;margin:0 auto;padding:0 20px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:200px;max-width:360px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 12px}
+.search-wrap input{border:none;outline:none;flex:1;font-size:13px;background:transparent}
+.chip{padding:6px 12px;border-radius:20px;font-size:12px;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:default}
+.chip.on{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;font-weight:500}
+.btn{padding:6px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:12px;cursor:pointer;color:#374151}
+.btn:hover{background:#f3f4f6}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.sort-select{padding:6px 10px;border-radius:8px;border:1px solid #e5e7eb;font-size:12px;background:#fff;cursor:pointer}
+
+.main{max-width:1400px;margin:0 auto;padding:0 20px 60px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;position:relative}
+.panel-hd{padding:12px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.panel-hd h2{font-size:14px;font-weight:600}
+.panel-hd span{font-size:11px;color:#6b7280}
+.panel-hd-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn-sim-orders{font-size:12px;font-weight:600;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}
+.btn-sim-orders:hover{background:#dbeafe}
+.btn-sim-orders.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.sim-orders-badge{display:inline-block;min-width:18px;padding:0 6px;margin-left:4px;line-height:18px;border-radius:999px;background:#2563eb;color:#fff;font-size:11px;font-weight:700}
+.btn-sim-orders.on .sim-orders-badge{background:rgba(255,255,255,.25)}
+.sim-orders-panel{position:absolute;top:52px;right:12px;z-index:95;width:min(760px,calc(100% - 24px));max-height:min(70vh,560px);display:none;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #dbeafe;border-radius:12px;box-shadow:0 16px 48px rgba(15,23,42,.18)}
+.sim-orders-panel.open{display:flex}
+.sim-orders-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e5e7eb;background:#f8fbff}
+.sim-orders-hd strong{font-size:13px;color:#0f172a}
+.sim-orders-actions{display:flex;align-items:center;gap:6px}
+.sim-orders-body{overflow:auto;padding:10px 12px;flex:1}
+.sim-orders-empty{padding:30px 16px;text-align:center;color:#94a3b8;font-size:13px}
+.sim-orders-summary{font-size:12px;color:#475569;margin-bottom:8px;padding:8px 10px;background:#f8fafc;border-radius:8px}
+.sim-orders-summary b{color:#047857}
+.sim-orders-table{width:100%;border-collapse:collapse;font-size:11px}
+.sim-orders-table th,.sim-orders-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:left;vertical-align:top}
+.sim-orders-table th{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.sim-orders-table th.num,.sim-orders-table td.num{text-align:right}
+.sim-orders-market{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:#ecfdf5;color:#047857}
+.sim-side-buy{color:#059669;font-weight:600}
+.sim-side-sell{color:#dc2626;font-weight:600}
+.sim-amt-out{color:#dc2626;font-weight:600}
+.sim-amt-in{color:#059669;font-weight:600}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead{background:#f9fafb}
+th{padding:10px 12px;font-size:11px;font-weight:600;color:#6b7280;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid #e5e7eb}
+th:hover{color:#111827}
+th.sorted{color:#2563eb}
+td{padding:10px 12px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:middle}
+tr:hover td{background:#fafbfc}
+tr.expanded td{background:#f0f7ff}
+
+.market-cell{display:flex;align-items:flex-start;gap:10px;min-width:280px}
+.market-img{width:36px;height:36px;border-radius:6px;object-fit:cover;background:#f3f4f6;flex-shrink:0}
+.market-title{font-weight:500;color:#111827;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.market-title:hover{color:#2563eb}
+.sub-markets{margin-top:6px;padding-left:46px}
+.sub-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed #e5e7eb;font-size:11px;color:#4b5563}
+.sub-row:first-child{border-top:none}
+.sub-price{min-width:42px;text-align:right;font-weight:600;color:#059669}
+
+.source-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:#e0edff;color:#1d4ed8}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ends{color:#7c3aed;font-weight:500;white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:#f3f4f6;color:#4b5563;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag.more{background:#e5e7eb;cursor:pointer}
+.desc{color:#6b7280;font-size:11px;max-width:220px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.expand-btn{width:28px;height:28px;border:none;background:#f3f4f6;border-radius:6px;cursor:pointer;font-size:14px;color:#6b7280;flex-shrink:0}
+.expand-btn:hover{background:#e5e7eb}
+.expand-btn.open{background:#dbeafe;color:#2563eb}
+
+.footer-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #e5e7eb;flex-wrap:wrap;gap:8px}
+.page-info{font-size:12px;color:#6b7280}
+.page-btns{display:flex;gap:6px;align-items:center}
+
+.loading,.empty,.err{padding:48px 20px;text-align:center;color:#6b7280}
+.spin{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{color:#dc2626}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9ca3af;margin-right:6px}
+.status-dot.ok{background:#22c55e}
+.status-dot.busy{background:#3b82f6;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.api-note{font-size:11px;color:#9ca3af;padding:8px 20px 20px;max-width:1400px;margin:0 auto}
+
+.filters{max-width:1400px;margin:0 auto 12px;padding:0 20px}
+.filter-panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px}
+.filter-title{font-size:12px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.filter-rows{display:flex;flex-direction:column;gap:12px}
+.filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-label{font-size:11px;color:#6b7280;min-width:56px;flex-shrink:0}
+.filter-chip{padding:5px 12px;border-radius:16px;font-size:11px;border:1px solid #e5e7eb;background:#f9fafb;color:#4b5563;cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-chip:hover{border-color:#93c5fd;color:#1d4ed8}
+.filter-chip.on{background:#eff6ff;border-color:#2563eb;color:#1d4ed8;font-weight:500}
+.filter-input{width:64px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;text-align:center}
+.filter-input:focus{outline:none;border-color:#2563eb}
+.filter-sep{color:#9ca3af;font-size:11px}
+.prob-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#ecfdf5;color:#059669}
+.prob-badge.mid{background:#fef3c7;color:#b45309}
+.prob-badge.low{background:#fee2e2;color:#dc2626}
+.interval-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#fef3c7;color:#b45309}
+.interval-badge.m15{background:#ede9fe;color:#6d28d9}
+.market-td-5m{position:relative;vertical-align:top}
+.crypto-countdown{position:absolute;top:4px;right:4px;z-index:2;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#b45309;line-height:1.2;pointer-events:none}
+.crypto-countdown.urgent{background:#fee2e2;color:#dc2626;animation:cryptoPulse 1s ease-in-out infinite}
+@keyframes cryptoPulse{50%{opacity:.65}}
+.prob-badge.book::after{content:' · 盘口';font-size:9px;font-weight:500;opacity:.75}
+
+.btn-wallet{background:#f59e0b;border-color:#f59e0b;color:#fff}
+.btn-wallet:hover{background:#d97706}
+.btn-wallet.connected{background:#16a34a;border-color:#16a34a}
+.wallet-panel{max-width:1400px;margin:0 auto 12px;padding:0 20px}
+.wallet-panel-inner{background:#fff;border:1px solid #e5e7eb;border-radius:12px;max-height:0;overflow:hidden;transition:max-height .3s}
+.wallet-panel-inner.open{max-height:420px;padding:14px 16px}
+.wp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px}
+.wp-field{display:flex;flex-direction:column;gap:4px}
+.wp-label{font-size:10px;color:#6b7280;font-weight:600}
+.wp-input{border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;font-size:12px;font-family:ui-monospace,monospace}
+.wp-input:focus{outline:none;border-color:#2563eb}
+.wp-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.wp-addr{font-family:monospace;font-size:11px;background:#f3f4f6;padding:3px 8px;border-radius:4px;color:#4b5563}
+.sel-checkbox{width:16px;height:16px;cursor:pointer}
+.batch-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:200;box-shadow:0 -4px 16px rgba(0,0,0,.08);transform:translateY(100%);transition:transform .25s}
+.batch-bar.show{transform:translateY(0)}
+.toast-wrap{position:fixed;top:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 14px;border-radius:8px;font-size:12px;color:#fff;max-width:420px;box-shadow:0 4px 12px rgba(0,0,0,.15);line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.toast.success{background:#16a34a}
+.toast.error{background:#dc2626}
+.toast.info{background:#2563eb}
+.toast.warn{background:#d97706}
+
+.auto-fab{position:fixed;right:20px;bottom:88px;width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:22px;cursor:pointer;z-index:260;box-shadow:0 4px 16px rgba(99,102,241,.45);transition:transform .2s,box-shadow .2s}
+.auto-fab:hover{transform:scale(1.06)}
+.auto-fab.on{box-shadow:0 0 0 3px rgba(34,197,94,.5),0 4px 16px rgba(99,102,241,.5)}
+.auto-fab.on::after{content:'';position:absolute;top:6px;right:6px;width:10px;height:10px;background:#22c55e;border-radius:50%;border:2px solid #fff}
+.auto-fab.busy{opacity:.7;animation:autoPulse 1s infinite}
+@keyframes autoPulse{0%,100%{opacity:.7}50%{opacity:1}}
+.auto-panel{position:fixed;right:20px;bottom:150px;width:min(400px,calc(100vw - 40px));max-height:min(85vh,640px);overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.15);z-index:259;padding:14px 16px;display:none}
+.auto-section-title{font-size:12px;font-weight:600;color:#374151;margin:12px 0 6px;padding-top:10px;border-top:1px solid #e5e7eb}
+.auto-panel.open{display:block}
+.auto-panel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.auto-hint{font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:12px}
+.auto-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.auto-lbl{font-size:11px;color:#6b7280;white-space:nowrap}
+.auto-filter-box{font-size:11px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;color:#374151;line-height:1.45}
+.auto-filter-btns{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.auto-filter-btns .btn{flex:1;min-width:0}
+.auto-filter-btns .btn:not(.btn-primary){flex:0 0 auto}
+.auto-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6}
+
+.orders-fab{position:fixed;right:20px;bottom:148px;width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#0d9488,#14b8a6);color:#fff;font-size:20px;cursor:pointer;z-index:260;box-shadow:0 4px 16px rgba(13,148,136,.4);transition:transform .2s,box-shadow .2s}
+.orders-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(13,148,136,.5)}
+.orders-panel{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:100%;max-height:min(92vh,920px);overflow:hidden;display:none;flex-direction:column;background:#f8fafc;border:1px solid #e2e8f0;border-bottom:none;border-radius:20px 20px 0 0;box-shadow:0 -12px 48px rgba(15,23,42,.12);z-index:259}
+.orders-panel.open{display:flex}
+.orders-panel::before{content:'';display:block;width:40px;height:4px;background:#cbd5e1;border-radius:4px;margin:10px auto 0;flex-shrink:0}
+.orders-panel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 14px;flex-shrink:0;font-size:16px;max-width:1400px;margin:0 auto;width:100%;box-sizing:border-box}
+.orders-panel-hd strong{color:#0f172a;letter-spacing:-.02em}
+.orders-panel-actions{display:flex;gap:8px;align-items:center}
+.orders-btn-refresh{padding:6px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:12px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s}
+.orders-btn-refresh:hover{background:#f1f5f9;border-color:#cbd5e1}
+.orders-btn-close{width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:#64748b;font-size:18px;cursor:pointer;line-height:1}
+.orders-btn-close:hover{background:#e2e8f0;color:#0f172a}
+.orders-portfolio{padding:0 16px 10px;flex-shrink:0;max-width:1400px;margin:0 auto;width:100%;box-sizing:border-box}
+.orders-portfolio-card{background:linear-gradient(145deg,#0f766e 0%,#0d9488 50%,#14b8a6 100%);border-radius:12px;padding:10px 12px;color:#fff;box-shadow:0 4px 14px rgba(13,148,136,.22)}
+.orders-portfolio-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.orders-portfolio-label{font-size:11px;opacity:.85;font-weight:500;white-space:nowrap}
+.orders-portfolio-total{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;white-space:nowrap}
+.orders-portfolio-total .orders-portfolio-hint{font-size:10px;font-weight:400;opacity:.7;margin-left:8px}
+.orders-portfolio-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.orders-portfolio-item{background:rgba(255,255,255,.12);border-radius:6px;padding:5px 6px;border:1px solid rgba(255,255,255,.1);min-width:0;text-align:center}
+.orders-portfolio-item span{display:block;font-size:9px;opacity:.78;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orders-portfolio-item b{font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.orders-portfolio-item.profit b{color:#bbf7d0}
+.orders-portfolio-item.loss b{color:#fecaca}
+.orders-cash-err{font-size:9px;color:#fecaca}
+.orders-cash-muted{font-size:9px;opacity:.75}
+.orders-body{overflow:auto;padding:8px 16px 20px;flex:1;min-height:120px;max-width:1400px;margin:0 auto;width:100%;box-sizing:border-box}
+.orders-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px}
+.orders-section-hd span{font-size:12px;font-weight:600;color:#334155}
+.orders-section-hd em{font-style:normal;font-size:11px;color:#94a3b8;font-weight:500}
+.orders-pos-table{overflow-x:auto}
+.orders-pos-head,.orders-pos-row{display:grid;grid-template-columns:minmax(200px,2.2fr) 88px 52px 52px 80px 88px;align-items:center;gap:8px;padding:6px 4px;min-width:560px}
+.orders-pos-head{font-size:10px;color:#94a3b8;font-weight:500;border-bottom:1px solid #e2e8f0;margin-bottom:2px}
+.orders-pos-head .col-val,.orders-pos-head .col-bet,.orders-pos-head .col-win,.orders-pos-head .col-pr{text-align:center}
+.orders-pos-list .orders-pos-row{border-bottom:1px solid #f1f5f9;font-size:12px}
+.orders-pos-list .orders-pos-row:last-child{border-bottom:none}
+.orders-pos-list .orders-pos-row:hover{background:#f8fafc}
+.orders-pos-market{display:flex;align-items:center;gap:8px;min-width:0}
+.orders-pos-icon{width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f1f5f9}
+.orders-pos-icon-ph{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#64748b}
+.orders-pos-info{min-width:0;flex:1}
+.orders-pos-title{font-size:12px;font-weight:600;color:#0f172a;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orders-pos-sub{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap}
+.orders-pos-badge{padding:2px 7px;border-radius:999px;font-size:10px;font-weight:600;white-space:nowrap}
+.orders-pos-badge.yes{background:#dcfce7;color:#166534}
+.orders-pos-badge.no{background:#fee2e2;color:#991b1b}
+.orders-pos-badge.other{background:#f1f5f9;color:#475569}
+.orders-pos-shares{font-size:10px;color:#94a3b8;white-space:nowrap}
+.orders-pos-col{text-align:center;white-space:nowrap;font-size:11px;color:#64748b}
+.orders-pos-price{color:#64748b}
+.orders-pos-muted{color:#94a3b8}
+.orders-pos-value{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.orders-pos-value b{font-size:12px;color:#0f172a;font-weight:600}
+.orders-pos-value span{font-size:10px;font-weight:500}
+.orders-pos-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.orders-pos-link{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:#94a3b8;text-decoration:none;font-size:14px}
+.orders-pos-link:hover{background:#f1f5f9;color:#475569}
+.pnl-pos{color:#16a34a}
+.pnl-neg{color:#dc2626}
+.pnl-flat{color:#64748b}
+.orders-empty{padding:40px 24px;text-align:center;color:#94a3b8;font-size:13px;background:#fff;border:1px dashed #e2e8f0;border-radius:14px}
+.orders-loading{padding:32px;text-align:center;color:#64748b;font-size:13px}
+.btn-sell-pos{padding:5px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-sell-pos:hover{background:#1d4ed8}
+.btn-sell-pos:disabled{opacity:.5;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="brand">
+      <div class="brand-icon">P</div>
+      <div>
+        <div class="brand-title">Polymarket Markets</div>
+        <div class="brand-sub">Gamma API · 官方市场数据</div>
+      </div>
+    </div>
+    <nav class="topbar-nav" aria-label="页面切换">
+      <a class="topbar-tab on" href="polymarket_active_markets.html">全部市场</a>
+      <a class="topbar-tab" href="polymarket_crypto_5m.html">加密 5分钟</a>
+      <a class="topbar-tab" href="polymarket_crypto_15m.html">加密 15分钟</a>
+      <a class="topbar-tab" href="polymarket_traders.html">交易列表</a>
+    </nav>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText" style="font-size:12px;color:#6b7280">就绪</span>
+    <button class="btn btn-wallet" id="walletBtn" type="button" onclick="PMTrade.toggleWallet()">钱包 / 交易</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">刷新</button>
+  </div>
+</div>
+
+<div class="wallet-panel">
+  <div class="wallet-panel-inner" id="walletPanel">
+    <div class="wp-grid">
+      <div class="wp-field">
+        <span class="wp-label">私钥（下单 EIP-712 签名）</span>
+        <input class="wp-input" id="pkInput" type="text" placeholder="0x... 本地保存">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Key</span>
+        <input class="wp-input" id="apiKeyInput" type="text" placeholder="CLOB L2">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Secret</span>
+        <input class="wp-input" id="apiSecretInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Passphrase</span>
+        <input class="wp-input" id="apiPassInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">代理钱包 (Funder)</span>
+        <input class="wp-input" id="funderInput" type="text" placeholder="Polymarket 代理地址">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">签名类型</span>
+        <select class="wp-input" id="sigTypeSelect">
+          <option value="0">0 - EOA</option>
+          <option value="1" selected>1 - POLY_PROXY</option>
+          <option value="2">2 - MetaMask / Gnosis</option>
+        </select>
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">每单金额 (USDC)</span>
+        <input class="wp-input" id="orderAmtInput" type="number" min="0.1" step="0.1" value="1" style="max-width:100px" title="市价单默认金额">
+      </div>
+    </div>
+    <div class="wp-actions">
+      <button class="btn btn-primary" type="button" onclick="PMTrade.connectWallet()">保存并连接</button>
+      <button class="btn" type="button" onclick="PMTrade.connectMetaMask()">MetaMask</button>
+      <button class="btn" type="button" onclick="PMTrade.deriveApiKey()">获取 API Key</button>
+      <button class="btn" type="button" onclick="PMTrade.fetchProxyAddress()">获取代理地址</button>
+      <span id="walletStatus" style="font-size:12px;color:#6b7280">未连接</span>
+      <span id="walletAddr" class="wp-addr" style="display:none"></span>
+      <span id="funderAddr" class="wp-addr" style="display:none"></span>
+    </div>
+    <p style="font-size:11px;color:#9ca3af;margin-top:10px">批量下单为<strong>市价 FOK</strong>：与官网一致，按 CLOB 盘口花费 $1（约 2% 滑点保护），买入主结果（Yes/No 概率更高一侧）。</p>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Markets</h1>
+  <p>Explore active prediction markets on Polymarket (via Gamma API)</p>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">Active Events</div>
+    <div class="stat-value" id="statCount">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Volume</div>
+    <div class="stat-value" id="statVolume">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Open Interest</div>
+    <div class="stat-value" id="statOI">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">24h Volume</div>
+    <div class="stat-value" id="statVol24">—</div>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-panel">
+    <div class="filter-title">
+      <span>筛选条件</span>
+      <button class="btn" type="button" onclick="resetFilters()">重置</button>
+    </div>
+    <div class="filter-rows">
+      <div class="filter-row">
+        <span class="filter-label">结束时间</span>
+        <div class="filter-chip on" data-end="0" onclick="setEndFilter(0,this)">不限</div>
+        <div class="filter-chip" data-end="1" onclick="setEndFilter(1,this)">1小时内</div>
+        <div class="filter-chip" data-end="2" onclick="setEndFilter(2,this)">2小时内</div>
+        <div class="filter-chip" data-end="3" onclick="setEndFilter(3,this)">3小时内</div>
+        <div class="filter-chip" data-end="6" onclick="setEndFilter(6,this)">6小时内</div>
+        <div class="filter-chip" data-end="12" onclick="setEndFilter(12,this)">12小时内</div>
+        <div class="filter-chip" data-end="24" onclick="setEndFilter(24,this)">1天内</div>
+        <div class="filter-chip" data-end="72" onclick="setEndFilter(72,this)">3天内</div>
+        <div class="filter-chip" data-end="168" onclick="setEndFilter(168,this)">7天内</div>
+        <div class="filter-chip" data-end="720" onclick="setEndFilter(720,this)">30天内</div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">赢率 %</span>
+        <input class="filter-input" id="probMin" type="number" min="0" max="100" placeholder="最低" oninput="onFilterChange()">
+        <span class="filter-sep">—</span>
+        <input class="filter-input" id="probMax" type="number" min="0" max="100" placeholder="最高" oninput="onFilterChange()">
+        <div class="filter-chip" onclick="setProbPreset(0,30)">&lt;30%</div>
+        <div class="filter-chip" onclick="setProbPreset(60,70)">60–70%</div>
+        <div class="filter-chip" onclick="setProbPreset(70,80)">70–80%</div>
+        <div class="filter-chip" onclick="setProbPreset(80,90)">80–90%</div>
+        <div class="filter-chip" onclick="setProbPreset(30,70)">30–70%</div>
+        <div class="filter-chip" onclick="setProbPreset(70,100)">&gt;70%</div>
+        <div class="filter-chip" onclick="setProbPreset(90,100)">≥90%</div>
+        <span class="filter-sep" style="margin-left:4px">按主市场最高概率（Yes / No 均可）</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">交易量</span>
+        <select class="sort-select" id="volType" onchange="onFilterChange()">
+          <option value="total">总交易量</option>
+          <option value="24h">24h 交易量</option>
+        </select>
+        <span class="filter-sep">≥</span>
+        <select class="sort-select" id="minVol" onchange="onFilterChange()">
+          <option value="0">不限</option>
+          <option value="1000">$1K</option>
+          <option value="10000">$10K</option>
+          <option value="100000">$100K</option>
+          <option value="500000">$500K</option>
+          <option value="1000000">$1M</option>
+          <option value="10000000">$10M</option>
+        </select>
+      </div>
+      <div class="filter-row" id="tagFilterRow">
+        <span class="filter-label">标签</span>
+        <div class="filter-chip on" data-cat="all" onclick="setCatFilter('all',this)">全部</div>
+        <div class="filter-chip" data-cat="politics" onclick="setCatFilter('politics',this)">政治</div>
+        <div class="filter-chip" data-cat="crypto" onclick="setCatFilter('crypto',this)">加密</div>
+        <a class="filter-chip filter-chip-link" href="polymarket_crypto_5m.html" title="独立页面 · 订单簿">加密 5分钟 →</a>
+        <a class="filter-chip filter-chip-link" href="polymarket_crypto_15m.html" title="独立页面 · 订单簿">加密 15分钟 →</a>
+        <div class="filter-chip" data-cat="finance" onclick="setCatFilter('finance',this)">财务</div>
+        <div class="filter-chip" data-cat="tech" onclick="setCatFilter('tech',this)">科技</div>
+        <div class="filter-chip" data-cat="culture" onclick="setCatFilter('culture',this)">文化</div>
+        <div class="filter-chip" data-cat="economy" onclick="setCatFilter('economy',this)">经济</div>
+        <div class="filter-chip" data-cat="weather" onclick="setCatFilter('weather',this)">天气</div>
+        <div class="filter-chip" data-cat="other" onclick="setCatFilter('other',this)">其他</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span>🔍</span>
+    <input type="text" id="searchInput" placeholder="搜索标题、标签..." oninput="onSearch()">
+  </div>
+  <span class="chip on">Active</span>
+  <span class="chip on">Polymarket</span>
+  <select class="sort-select" id="sortSelect" onchange="applyFilterAndRender()">
+    <option value="volume_desc">Volume ↓</option>
+    <option value="oi_desc">Open Interest ↓</option>
+    <option value="vol24_desc">24h Volume ↓</option>
+    <option value="end_asc">Ends ↑</option>
+    <option value="end_desc">Ends ↓</option>
+    <option value="title_asc">Title A→Z</option>
+  </select>
+  <select class="sort-select" id="pageSizeSelect" onchange="currentPage=0;applyFilterAndRender()">
+    <option value="25">25 / page</option>
+    <option value="50" selected>50 / page</option>
+    <option value="100">100 / page</option>
+  </select>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>All Markets</h2>
+      <div class="panel-hd-tools">
+        <button class="btn btn-sim-orders" type="button" id="simOrdersBtn" onclick="toggleSimOrdersPanel()">
+          模拟订单 <span class="sim-orders-badge" id="simOrdersBadge">0</span>
+        </button>
+        <span id="resultLabel">Loading...</span>
+      </div>
+    </div>
+    <div id="simOrdersPanel" class="sim-orders-panel" aria-hidden="true">
+      <div class="sim-orders-hd">
+        <strong>定时调度 · 模拟订单</strong>
+        <div class="sim-orders-actions">
+          <button class="btn" type="button" onclick="renderSimOrdersPanel()">刷新</button>
+          <button class="btn" type="button" onclick="closeSimOrdersPanel()">✕</button>
+        </div>
+      </div>
+      <div id="simOrdersBody" class="sim-orders-body">
+        <div class="sim-orders-empty">暂无模拟订单</div>
+      </div>
+    </div>
+    <div id="tableArea">
+      <div class="loading"><div class="spin"></div>正在加载...<br><small style="color:#9ca3af;margin-top:8px;display:block">请用 start-markets.bat 启动，勿直接双击 HTML</small></div>
+    </div>
+    <div class="footer-bar" id="paginationBar" style="display:none">
+      <div class="page-info" id="pageInfo"></div>
+      <div class="page-btns">
+        <button class="btn" id="prevBtn" onclick="changePage(-1)">Previous</button>
+        <button class="btn" id="nextBtn" onclick="changePage(1)">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="api-note">
+  Data source: <code>GET https://gamma-api.polymarket.com/events?active=true&amp;closed=false</code>
+  · <a href="https://docs.polymarket.com/cn/trading/overview" target="_blank">交易文档</a>
+</p>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="batch-bar" id="batchBar">
+  <span>已选 <b id="batchCount">0</b> 个市场</span>
+  <span class="filter-sep">市价（金额见钱包）</span>
+  <button class="btn btn-primary" type="button" onclick="PMTrade.batchOrder('BUY')">批量买入</button>
+  <button class="btn" type="button" onclick="PMTrade.batchOrder('SELL')" style="color:#dc2626">批量卖出</button>
+  <button class="btn" type="button" onclick="PMTrade.clearSelection()">清除选择</button>
+</div>
+
+<script src="polymarket-trading.js?v=20260606a"></script>
+<script src="polymarket-auto-schedule.js?v=20260604d"></script>
+<script src="polymarket-my-orders.js"></script>
+<script>
+const GAMMA_DIRECT = 'https://gamma-api.polymarket.com/events';
+const PAGE_FETCH = 100;
+const MAX_PAGES = 30;        // 最多约 3000 条
+const FIRST_SHOW_PAGES = 1;  // 第一页拉完就显示
+
+let allEvents = [];
+let filtered = [];
+let expanded = new Set();
+let currentPage = 0;
+let loading = false;
+let apiMode = 'auto'; // 'proxy' | 'direct'
+let filterEndHours = 0;
+let filterCategory = 'all';
+let simOrdersPanelOpen = false;
+/** 与 polymarket.com/crypto/5M 、/15M 一致 */
+const CRYPTO_PAGE_COINS = ['btc', 'eth', 'sol', 'xrp', 'doge', 'hype', 'bnb'];
+const cryptoPageEvents = { '5M': [], '15M': [] };
+const CRYPTO_TEXT_RE = /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|doge|dogecoin|crypto|updown|up or down)\b/i;
+
+const TAG_MAP = {
+  politics: ['politics', 'geopolitics', 'elections', 'global elections', 'us election', 'main election',
+    'foreign policy', 'world elections', 'primaries', 'congress', 'world affairs', 'trump', 'biden'],
+  crypto: ['crypto', 'airdrops', 'bitcoin', 'ethereum', 'solana', 'defi'],
+  finance: ['finance', 'business', 'stocks', 'ipos', 'exchange', 'earn 4%', 'pre-market', 'commodities', 'economic policy'],
+  tech: ['tech', 'ai', 'science'],
+  culture: ['culture', 'entertainment', 'aliens', 'religion'],
+  economy: ['economy', 'fed', 'inflation', 'gdp'],
+  sports: ['sports', 'nba', 'nfl', 'mlb', 'nhl', 'soccer', 'fifa', 'games', 'champions league', 'atp', 'esports', 'gaming'],
+  weather: ['weather', 'climate']
+};
+
+const $ = id => document.getElementById(id);
+
+function getSimScheduleState() {
+  try {
+    if (window.PMAuto?.getSimState) return window.PMAuto.getSimState();
+    const raw = localStorage.getItem('pm_auto_schedule_sim_v1');
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      startCash: 100,
+      cash: 100,
+      positions: [],
+      history: [],
+      ...parsed,
+      positions: Array.isArray(parsed?.positions) ? parsed.positions : [],
+      history: Array.isArray(parsed?.history) ? parsed.history : [],
+    };
+  } catch {
+    return { startCash: 100, cash: 100, positions: [], history: [] };
+  }
+}
+
+function fmtSimTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString('zh-CN', {
+    hour12: false,
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+function updateSimOrdersBadge() {
+  const st = getSimScheduleState();
+  if ($('simOrdersBadge')) $('simOrdersBadge').textContent = String(st.history?.length || 0);
+}
+
+function renderSimOrdersPanel() {
+  const body = $('simOrdersBody');
+  if (!body) return;
+  const st = getSimScheduleState();
+  const hist = Array.isArray(st.history) ? st.history : [];
+  updateSimOrdersBadge();
+  if (!hist.length) {
+    body.innerHTML = '<div class="sim-orders-empty">暂无模拟订单<br><small style="color:#cbd5e1">启用「定时调度 → 模拟买卖」后会自动记录</small></div>';
+    return;
+  }
+  const delta = (st.cash || 0) - (st.startCash || 100);
+  const sign = delta >= 0 ? '+' : '';
+  let html = `<div class="sim-orders-summary">模拟现金 <b>$${(st.cash || 0).toFixed(2)}</b> · 期初 $${(st.startCash || 100).toFixed(2)} · 余额变化 ${sign}$${delta.toFixed(2)} · 持仓 ${st.positions?.length || 0} 个</div>`;
+  html += '<table class="sim-orders-table"><thead><tr><th>时间</th><th>市场</th><th>方向</th><th class="num">价格</th><th class="num">份额</th><th class="num">金额</th><th class="num">现金</th></tr></thead><tbody>';
+  for (const row of hist.slice(0, 120)) {
+    const side = (row.action || row.side || '').toUpperCase();
+    const sideCls = side === 'BUY' ? 'sim-side-buy' : 'sim-side-sell';
+    const price = row.price != null ? `${(Number(row.price) * 100).toFixed(1)}¢` : '—';
+    const shares = row.shares != null ? Number(row.shares).toFixed(4) : '—';
+    const amt = row.amount != null ? Number(row.amount).toFixed(3) : 0;
+    const fee = row.fee != null ? Number(row.fee).toFixed(5) : '0.00000';
+    const amtHtml = side === 'BUY'
+      ? `<span class="sim-amt-out">-$${amt}</span><br><small style="color:#94a3b8">费 $${fee}</small>`
+      : `<span class="sim-amt-in">+$${amt}</span><br><small style="color:#94a3b8">费 $${fee}</small>`;
+    html += `<tr>
+      <td>${fmtSimTime(row.at)}</td>
+      <td class="sim-orders-market" title="${esc(row.label || '')}">${esc(row.label || '—')}</td>
+      <td class="${sideCls}">${esc(side || '—')} <span class="sim-tag">模拟</span></td>
+      <td class="num">${price}</td>
+      <td class="num">${shares}</td>
+      <td class="num">${amtHtml}</td>
+      <td class="num">$${Number(row.cashAfter || 0).toFixed(2)}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  if (hist.length > 120) html += `<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:8px">仅显示最近 120 条，共 ${hist.length} 条</div>`;
+  body.innerHTML = html;
+}
+
+function toggleSimOrdersPanel() {
+  simOrdersPanelOpen = !simOrdersPanelOpen;
+  const panel = $('simOrdersPanel');
+  const btn = $('simOrdersBtn');
+  if (panel) {
+    panel.classList.toggle('open', simOrdersPanelOpen);
+    panel.setAttribute('aria-hidden', simOrdersPanelOpen ? 'false' : 'true');
+  }
+  if (btn) btn.classList.toggle('on', simOrdersPanelOpen);
+  if (simOrdersPanelOpen) renderSimOrdersPanel();
+}
+
+function closeSimOrdersPanel() {
+  simOrdersPanelOpen = false;
+  $('simOrdersPanel')?.classList.remove('open');
+  $('simOrdersPanel')?.setAttribute('aria-hidden', 'true');
+  $('simOrdersBtn')?.classList.remove('on');
+}
+
+function apiBase() {
+  if (apiMode === 'proxy') return '/api/events';
+  if (apiMode === 'direct') return GAMMA_DIRECT;
+  return location.protocol.startsWith('http') ? '/api/events' : GAMMA_DIRECT;
+}
+
+function formatMoney(v) {
+  v = parseFloat(v) || 0;
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+}
+
+function parseJsonField(val, fallback = []) {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try { return JSON.parse(val); } catch { return fallback; }
+  }
+  return fallback;
+}
+
+/** 主结果胜率：取 Yes/No（或多方）中概率最高的一项，不限定 Yes */
+function getLeadProb(market) {
+  if (!market || !market.prices || !market.prices.length) return null;
+  let maxP = -1;
+  for (const raw of market.prices) {
+    const p = parseFloat(raw);
+    if (!isNaN(p) && p > maxP) maxP = p;
+  }
+  return maxP >= 0 ? maxP * 100 : null;
+}
+
+function formatMarketProb(market) {
+  if (!market || !market.prices || !market.prices.length) return '—';
+  const outcomes = market.outcomes || [];
+  let bestIdx = 0;
+  let bestP = -1;
+  market.prices.forEach((raw, i) => {
+    const p = parseFloat(raw);
+    if (!isNaN(p) && p > bestP) {
+      bestP = p;
+      bestIdx = i;
+    }
+  });
+  if (bestP < 0) return '—';
+  const label = outcomes[bestIdx] ? String(outcomes[bestIdx]) : '';
+  const pct = Math.round(bestP * 100);
+  return label ? `${pct}% ${label}` : `${pct}%`;
+}
+
+function pickPrimaryMarket(markets) {
+  if (!markets.length) return null;
+  return markets.reduce((best, m) => (m.volume > (best?.volume || 0) ? m : best), markets[0]);
+}
+
+/** 当前可交易：未结束、未关闭、已开盘 */
+function isCurrentlyActive(ev) {
+  if (ev.closed === true || ev.active === false) return false;
+  const now = Date.now();
+  if (ev.endDate && new Date(ev.endDate).getTime() <= now) return false;
+  const tradeStart = ev.eventStartTime || ev.startTime;
+  const startMs = tradeStart
+    ? new Date(tradeStart).getTime()
+    : ev.startDate
+      ? new Date(ev.startDate).getTime()
+      : 0;
+  if (startMs && startMs > now) return false;
+  const markets = ev.markets || [];
+  if (markets.length) {
+    return markets.some(
+      (m) => m.closed !== true && m.active !== false && m.acceptingOrders !== false,
+    );
+  }
+  return true;
+}
+
+function eventSearchText(ev) {
+  const slug = (ev.slug || '').toLowerCase();
+  const title = (ev.title || '').toLowerCase();
+  const desc = (ev.description || '').toLowerCase();
+  const tags = (ev.tags || []).map(t => String(t).toLowerCase()).join(' ');
+  const markets = (ev.markets || []).map(m => (m.question || m.groupItemTitle || '').toLowerCase()).join(' ');
+  return [slug, title, desc, tags, markets].join(' ');
+}
+
+/** 识别加密 5m / 15m Up-Down 短线 events */
+function detectCryptoInterval(ev) {
+  const slug = (ev.slug || '').toLowerCase();
+  const text = eventSearchText(ev);
+  if (/-updown-15m-/.test(slug) || (/\b15\s*m(in(ute)?s?)?\b/.test(text) && CRYPTO_TEXT_RE.test(text))) return 15;
+  if (/-updown-5m-/.test(slug) || (/\b5\s*m(in(ute)?s?)?\b/.test(text) && CRYPTO_TEXT_RE.test(text))) return 5;
+  if (ev.startDate && ev.endDate) {
+    const mins = (new Date(ev.endDate) - new Date(ev.startDate)) / 60000;
+    if (CRYPTO_TEXT_RE.test(text)) {
+      if (mins > 2 && mins <= 9) return 5;
+      if (mins > 9 && mins <= 22) return 15;
+    }
+  }
+  return null;
+}
+
+function classifyEvent(tags) {
+  if (!tags || !tags.length) return 'other';
+  for (const t of tags) {
+    const label = String(t).toLowerCase();
+    for (const [cat, keys] of Object.entries(TAG_MAP)) {
+      if (keys.some(k => label === k || label.includes(k))) return cat;
+    }
+  }
+  return 'other';
+}
+
+function normalizeEvent(ev) {
+  const markets = (ev.markets || []).map(m => ({
+    id: m.id,
+    slug: m.slug,
+    question: m.question || m.groupItemTitle || '',
+    volume: parseFloat(m.volume || m.volumeNum || 0),
+    outcomes: parseJsonField(m.outcomes, ['Yes', 'No']),
+    prices: parseJsonField(m.outcomePrices, []).map(p => parseFloat(p) || 0),
+    clobTokenIds: parseJsonField(m.clobTokenIds, []),
+    negRisk: !!m.negRisk,
+    active: m.active,
+    closed: m.closed
+  }));
+  const tags = (ev.tags || []).map(t => (typeof t === 'string' ? t : (t.label || t.slug || ''))).filter(Boolean);
+  const primary = pickPrimaryMarket(markets);
+  const leadProb = getLeadProb(primary);
+  return {
+    id: ev.id,
+    slug: ev.slug,
+    title: (ev.title || '').trim(),
+    description: ev.description || '',
+    image: ev.image || ev.icon || '',
+    startDate: ev.startDate,
+    endDate: ev.endDate,
+    active: ev.active,
+    closed: ev.closed,
+    volume: parseFloat(ev.volume || 0),
+    volume24hr: parseFloat(ev.volume24hr || 0),
+    openInterest: parseFloat(ev.openInterest || 0),
+    liquidity: parseFloat(ev.liquidity || 0),
+    tags,
+    category: classifyEvent(tags),
+    cryptoInterval: detectCryptoInterval(ev),
+    leadProb,
+    markets,
+    primaryMarket: primary,
+    url: 'https://polymarket.com/event/' + (ev.slug || '')
+  };
+}
+
+/** 供 polymarket-trading.js 下单 */
+window.pmGetMarket = function (eventId) {
+  const ev = allEvents.find(e => String(e.id) === String(eventId));
+  if (!ev || !ev.primaryMarket) return null;
+  const p = ev.primaryMarket;
+  return {
+    id: ev.id,
+    title: ev.title,
+    outcomes: p.outcomes,
+    prices: p.prices,
+    clobTokenIds: p.clobTokenIds,
+    negRisk: p.negRisk || !!ev.markets?.some(m => m.negRisk),
+  };
+};
+
+/** 按 tokenId 反查市场标题（订单列表用） */
+window.pmGetMarketByTokenId = function (tokenId) {
+  const tid = String(tokenId || '');
+  if (!tid) return null;
+  const pools = [...allEvents];
+  Object.values(cryptoPageEvents).forEach((arr) => {
+    if (Array.isArray(arr)) pools.push(...arr);
+  });
+  for (const ev of pools) {
+    for (const m of ev.markets || []) {
+      const ids = parseJsonField(m.clobTokenIds, []);
+      const idx = ids.findIndex((id) => String(id) === tid);
+      if (idx >= 0) {
+        return {
+          title: ev.title,
+          outcome: (m.outcomes || [])[idx] || m.question || '',
+          eventId: ev.id,
+          negRisk: !!m.negRisk || !!ev.markets?.some((x) => x.negRisk),
+        };
+      }
+    }
+    const p = ev.primaryMarket;
+    if (p?.clobTokenIds) {
+      const idx = p.clobTokenIds.findIndex((id) => String(id) === tid);
+      if (idx >= 0) {
+        return {
+          title: ev.title,
+          outcome: (p.outcomes || [])[idx] || '',
+          eventId: ev.id,
+          negRisk: !!p.negRisk || !!ev.markets?.some((x) => x.negRisk),
+        };
+      }
+    }
+  }
+  return null;
+};
+
+function getEventsForFilterState(f) {
+  if (f.category === 'crypto5m') return cryptoPageEvents['5M'] || [];
+  if (f.category === 'crypto15m') return cryptoPageEvents['15M'] || [];
+  return allEvents;
+}
+
+/** 定时任务：按保存的筛选条件取市场 ID */
+window.getMarketsMatchingFilters = function (f) {
+  const filters = f || getFilterState();
+  return getEventsForFilterState(filters)
+    .filter((ev) => passesFilters(ev, filters))
+    .filter((ev) => ev.primaryMarket)
+    .map((ev) => String(ev.id));
+};
+
+/** 定时任务执行前刷新数据 */
+window.prepareDataForAutoTrade = async function (filters) {
+  let wait = 0;
+  while (loading && wait < 180) {
+    await new Promise((r) => setTimeout(r, 1000));
+    wait++;
+  }
+  await loadAll();
+  if (filters?.category === 'crypto5m') {
+    cryptoPageEvents['5M'] = await fetchCryptoPage('5M');
+  } else if (filters?.category === 'crypto15m') {
+    cryptoPageEvents['15M'] = await fetchCryptoPage('15M');
+  }
+};
+
+function getFilterState() {
+  const probMin = $('probMin').value.trim();
+  const probMax = $('probMax').value.trim();
+  return {
+    endHours: filterEndHours,
+    probMin: probMin === '' ? null : parseFloat(probMin),
+    probMax: probMax === '' ? null : parseFloat(probMax),
+    volType: $('volType').value,
+    minVol: parseFloat($('minVol').value) || 0,
+    category: filterCategory,
+    search: ($('searchInput').value || '').trim().toLowerCase()
+  };
+}
+window.getFilterState = getFilterState;
+
+function passesFilters(ev, f) {
+  if (!isCurrentlyActive(ev)) return false;
+
+  if (f.search) {
+    const q = f.search;
+    const hit = (ev.title || '').toLowerCase().includes(q)
+      || (ev.description || '').toLowerCase().includes(q)
+      || ev.tags.some(t => t.toLowerCase().includes(q))
+      || ev.markets.some(m => (m.question || '').toLowerCase().includes(q));
+    if (!hit) return false;
+  }
+
+  if (f.endHours > 0 && ev.endDate) {
+    const maxEnd = Date.now() + f.endHours * 3600000;
+    if (new Date(ev.endDate).getTime() > maxEnd) return false;
+  }
+
+  if (f.probMin != null || f.probMax != null) {
+    const p = ev.leadProb;
+    if (p == null) return false;
+    if (f.probMin != null && p < f.probMin) return false;
+    if (f.probMax != null && p > f.probMax) return false;
+  }
+
+  if (f.minVol > 0) {
+    const vol = f.volType === '24h' ? ev.volume24hr : ev.volume;
+    if (vol < f.minVol) return false;
+  }
+
+  if (f.category === 'crypto5m' && ev.cryptoInterval !== 5) return false;
+  if (f.category === 'crypto15m' && ev.cryptoInterval !== 15) return false;
+  if (f.category !== 'all' && f.category !== 'crypto5m' && f.category !== 'crypto15m' && ev.category !== f.category) return false;
+
+  return true;
+}
+
+function slugApiUrl(slug) {
+  if (apiMode === 'proxy' || location.protocol.startsWith('http')) {
+    return '/api/event-slug/' + encodeURIComponent(slug);
+  }
+  return 'https://gamma-api.polymarket.com/events/slug/' + encodeURIComponent(slug);
+}
+
+async function fetchEventBySlug(slug) {
+  const resp = await fetch(slugApiUrl(slug));
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('slug ' + slug + ' HTTP ' + resp.status);
+  const json = await resp.json();
+  if (json && json.event) return json.event;
+  if (json && json.id) return json;
+  return null;
+}
+
+function normalizeCryptoPageEvent(raw, intervalMin) {
+  const norm = normalizeEvent(raw);
+  norm.cryptoInterval = intervalMin;
+  norm.category = 'crypto';
+  norm.cryptoPage = intervalMin === 5 ? '5M' : '15M';
+  return norm;
+}
+
+function isCurrentCryptoSlotSlug(slug, intervalMin) {
+  const sec = intervalMin * 60;
+  const currentTs = Math.floor(Date.now() / 1000 / sec) * sec;
+  const m = (slug || '').toLowerCase().match(new RegExp(`-updown-${intervalMin}m-(\\d+)$`));
+  return m && parseInt(m[1], 10) === currentTs;
+}
+
+/** 浏览器直连时的 fallback（仅当前时间槽 7 个币种） */
+async function loadCryptoPageFallback(intervalKey) {
+  const intervalMin = intervalKey === '5M' ? 5 : 15;
+  const sec = intervalMin * 60;
+  const currentTs = Math.floor(Date.now() / 1000 / sec) * sec;
+  const found = [];
+  for (const coin of CRYPTO_PAGE_COINS) {
+    const slug = `${coin}-updown-${intervalMin}m-${currentTs}`;
+    try {
+      const raw = await fetchEventBySlug(slug);
+      if (!raw || !isCurrentlyActive(raw)) continue;
+      if (!isCurrentCryptoSlotSlug(raw.slug, intervalMin)) continue;
+      found.push(normalizeCryptoPageEvent(raw, intervalMin));
+    } catch (_) {}
+  }
+  return found;
+}
+
+async function fetchCryptoPage(intervalKey) {
+  if (location.protocol.startsWith('http')) {
+    try {
+      const resp = await fetch(`/api/crypto-page/${intervalKey}`);
+      const json = await resp.json();
+      if (resp.ok && json.success && Array.isArray(json.events)) {
+        const intervalMin = intervalKey === '5M' ? 5 : 15;
+        return json.events
+          .map(raw => normalizeCryptoPageEvent(raw, intervalMin))
+          .filter(isCurrentlyActive);
+      }
+    } catch (e) {
+      console.warn('[crypto-page] API 失败，使用 fallback:', e.message);
+    }
+  }
+  return loadCryptoPageFallback(intervalKey);
+}
+
+async function refreshCryptoPages() {
+  setStatus('busy', '同步 Polymarket 加密 5M / 15M 市场...');
+  const [e5, e15] = await Promise.all([fetchCryptoPage('5M'), fetchCryptoPage('15M')]);
+  cryptoPageEvents['5M'] = e5;
+  cryptoPageEvents['15M'] = e15;
+  console.log('[crypto-page] 5M:', e5.length, '15M:', e15.length);
+}
+
+function getBaseEvents() {
+  return allEvents;
+}
+
+function setEndFilter(hours, el) {
+  filterEndHours = hours;
+  document.querySelectorAll('[data-end]').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  onFilterChange();
+}
+
+function setCatFilter(cat, el) {
+  filterCategory = cat;
+  document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  onFilterChange();
+}
+
+function setProbPreset(min, max) {
+  $('probMin').value = min;
+  $('probMax').value = max === 100 ? '' : max;
+  onFilterChange();
+}
+
+function resetFilters() {
+  filterEndHours = 0;
+  filterCategory = 'all';
+  $('probMin').value = '';
+  $('probMax').value = '';
+  $('minVol').value = '0';
+  $('volType').value = 'total';
+  $('searchInput').value = '';
+  document.querySelectorAll('[data-end]').forEach(c => c.classList.toggle('on', c.dataset.end === '0'));
+  document.querySelectorAll('[data-cat]').forEach(c => c.classList.toggle('on', c.dataset.cat === 'all'));
+  onFilterChange();
+}
+
+function onFilterChange() {
+  currentPage = 0;
+  applyFilterAndRender();
+}
+
+function probBadgeHtml(pct, fromBook) {
+  if (pct == null) return '<span class="prob-badge">—</span>';
+  const n = Math.round(pct);
+  const cls = (n >= 70 ? '' : n >= 30 ? ' mid' : ' low') + (fromBook ? ' book' : '');
+  return `<span class="prob-badge${cls}" title="${fromBook ? '订单簿中间价' : ''}">${n}%</span>`;
+}
+
+function setStatus(type, text) {
+  const dot = $('statusDot');
+  dot.className = 'status-dot' + (type === 'ok' ? ' ok' : type === 'busy' ? ' busy' : '');
+  $('statusText').textContent = text;
+}
+
+async function fetchPage(offset) {
+  const params = new URLSearchParams({
+    active: 'true',
+    closed: 'false',
+    limit: String(PAGE_FETCH),
+    offset: String(offset),
+    order: 'volume',
+    ascending: 'false'
+  });
+  const url = apiBase() + '?' + params;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
+  let resp;
+  try {
+    resp = await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!resp.ok) throw new Error('API HTTP ' + resp.status);
+
+  const json = await resp.json();
+  if (Array.isArray(json)) return json;
+  if (json && json.success === false) throw new Error(json.error || 'API 返回失败');
+  if (json && Array.isArray(json.events)) return json.events;
+  return [];
+}
+
+async function detectApi() {
+  if (!location.protocol.startsWith('http')) {
+    apiMode = 'direct';
+    return;
+  }
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const r = await fetch('/api/health', { signal: ctrl.signal });
+    const j = await r.json();
+    apiMode = j.gamma ? 'proxy' : 'direct';
+  } catch {
+    apiMode = 'direct';
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function loadAll() {
+  if (loading) return;
+  loading = true;
+  expanded.clear();
+  $('refreshBtn').disabled = true;
+  setStatus('busy', '正在连接 API...');
+  $('tableArea').innerHTML = '<div class="loading"><div class="spin"></div>正在加载 Active 市场...</div>';
+  $('paginationBar').style.display = 'none';
+
+  try {
+    await detectApi();
+    setStatus('busy', apiMode === 'proxy' ? '通过本地代理拉取...' : '直连 Gamma API...');
+
+    allEvents = [];
+    let offset = 0;
+    for (let page = 0; page < MAX_PAGES; page++) {
+      setStatus('busy', `加载第 ${page + 1} 页... (已 ${allEvents.length} 条)`);
+      let batch;
+      try {
+        batch = await fetchPage(offset);
+      } catch (e) {
+        if (page === 0 && apiMode === 'proxy') {
+          apiMode = 'direct';
+          batch = await fetchPage(offset);
+        } else {
+          throw e;
+        }
+      }
+      allEvents.push(...batch.map(normalizeEvent).filter(ev => ev.category !== 'sports' && isCurrentlyActive(ev)));
+      if (page + 1 >= FIRST_SHOW_PAGES) {
+        updateStats();
+        applyFilterAndRender();
+      }
+      if (batch.length < PAGE_FETCH) break;
+      offset += PAGE_FETCH;
+    }
+
+    await refreshCryptoPages();
+    updateStats();
+    applyFilterAndRender();
+    setStatus('ok', `已更新 ${new Date().toLocaleTimeString()}`);
+  } catch (e) {
+    console.error(e);
+    setStatus('', '加载失败');
+    const hint = location.protocol === 'file:'
+      ? '<br><br><b>请用本地服务打开（不要双击 HTML）：</b><br>双击 <code>start-markets.bat</code><br>或运行 <code>node markets-server.mjs</code><br>然后访问 <code>http://localhost:3457/polymarket_active_markets.html</code>'
+      : '<br><br>请检查网络能否访问 gamma-api.polymarket.com，或重新运行 node markets-server.mjs';
+    $('tableArea').innerHTML = `<div class="err"><strong>加载失败</strong><br>${esc(e.message)}${hint}</div>`;
+  } finally {
+    loading = false;
+    $('refreshBtn').disabled = false;
+  }
+}
+
+function updateStats() {
+  const f = getFilterState();
+  const list = getBaseEvents().filter(ev => passesFilters(ev, f));
+  let vol = 0, oi = 0, vol24 = 0;
+  list.forEach(ev => {
+    vol += ev.volume;
+    oi += ev.openInterest;
+    vol24 += ev.volume24hr;
+  });
+  const baseLen = getBaseEvents().length;
+  const totalHint = '';
+  $('statCount').textContent = list.length.toLocaleString()
+    + (list.length < baseLen ? ` / ${baseLen}` : '')
+    + totalHint;
+  $('statVolume').textContent = formatMoney(vol);
+  $('statOI').textContent = formatMoney(oi);
+  $('statVol24').textContent = formatMoney(vol24);
+}
+
+function onSearch() {
+  onFilterChange();
+}
+
+function applyFilterAndRender() {
+  const f = getFilterState();
+  filtered = getBaseEvents().filter(ev => passesFilters(ev, f));
+  updateStats();
+
+  const sort = $('sortSelect').value;
+  filtered.sort((a, b) => {
+    if (sort === 'volume_desc') return b.volume - a.volume;
+    if (sort === 'oi_desc') return b.openInterest - a.openInterest;
+    if (sort === 'vol24_desc') return b.volume24hr - a.volume24hr;
+    if (sort === 'end_asc') return new Date(a.endDate) - new Date(b.endDate);
+    if (sort === 'end_desc') return new Date(b.endDate) - new Date(a.endDate);
+    return (a.title || '').localeCompare(b.title || '');
+  });
+
+  renderTable();
+}
+
+function changePage(delta) {
+  const pageSize = parseInt($('pageSizeSelect').value, 10);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  currentPage = Math.min(Math.max(0, currentPage + delta), totalPages - 1);
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleExpand(id) {
+  id = String(id);
+  if (expanded.has(id)) expanded.delete(id);
+  else expanded.add(id);
+  renderTable();
+}
+
+function renderTable() {
+  const pageSize = parseInt($('pageSizeSelect').value, 10);
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  currentPage = Math.min(currentPage, totalPages - 1);
+  const start = currentPage * pageSize;
+  const page = filtered.slice(start, start + pageSize);
+
+  const src = `全库 ${allEvents.length}`;
+  $('resultLabel').textContent = total
+    ? `显示 ${start + 1}–${Math.min(start + pageSize, total)}，共 ${total} 条（${src}）`
+    : '无匹配结果';
+
+  if (total === 0) {
+    $('tableArea').innerHTML = '<div class="empty">没有符合筛选条件的市场，请放宽条件或点击「重置」</div>';
+    $('paginationBar').style.display = 'none';
+    return;
+  }
+
+  const rows = page.map(ev => {
+    const evKey = String(ev.id);
+    const isExp = expanded.has(evKey);
+    const hasSubs = ev.markets.length > 1;
+    const img = ev.image
+      ? `<img class="market-img" src="${esc(ev.image)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '<div class="market-img"></div>';
+
+    const tagHtml = ev.tags.slice(0, 2).map(t =>
+      `<span class="tag" title="${esc(t)}">${esc(t)}</span>`
+    ).join('');
+    const moreTags = ev.tags.length > 2
+      ? `<span class="tag more" title="${esc(ev.tags.slice(2).join(', '))}">+${ev.tags.length - 2}</span>`
+      : '';
+
+    const desc = (ev.description || '').replace(/\s+/g, ' ').trim();
+    const descShort = desc.length > 120 ? desc.slice(0, 120) + '...' : desc;
+
+    let subHtml = '';
+    if (hasSubs && isExp) {
+      subHtml = '<div class="sub-markets">' + ev.markets.map(m => {
+        const leadP = formatMarketProb(m);
+        return `<div class="sub-row">
+          <span style="flex:1">${esc(m.question)}</span>
+          <span class="sub-price">${esc(leadP)}</span>
+          <span class="num" style="min-width:70px">${formatMoney(m.volume)}</span>
+        </div>`;
+      }).join('') + '</div>';
+    }
+
+    const expandBtn = hasSubs
+      ? `<button class="expand-btn${isExp ? ' open' : ''}" onclick="toggleExpand('${evKey}')" title="展开子市场">${isExp ? '−' : '+'}</button>`
+      : '<span style="width:28px"></span>';
+
+    return `<tr class="${isExp ? 'expanded' : ''}">
+      <td style="width:36px">
+        <input type="checkbox" class="sel-checkbox" value="${esc(evKey)}" onchange="PMTrade.updateBatchBar()" ${ev.primaryMarket ? '' : 'disabled title="无可交易子市场"'}>
+      </td>
+      <td>
+        <div class="market-cell">
+          ${expandBtn}
+          ${img}
+          <div style="flex:1;min-width:0">
+            <a class="market-title" href="${esc(ev.url)}" target="_blank" rel="noopener">${esc(ev.title)}${ev.cryptoInterval === 5 ? '<span class="interval-badge">5m</span>' : ev.cryptoInterval === 15 ? '<span class="interval-badge m15">15m</span>' : ''}</a>
+            ${subHtml}
+          </div>
+        </div>
+      </td>
+      <td><span class="source-badge">Polymarket</span></td>
+      <td class="num">${probBadgeHtml(ev.leadProb, ev.priceFromBook)}</td>
+      <td class="num">${formatMoney(ev.volume)}</td>
+      <td class="num">${formatMoney(ev.openInterest)}</td>
+      <td class="ends">${formatDate(ev.endDate)}</td>
+      <td><div class="tags">${tagHtml}${moreTags}</div></td>
+      <td><div class="desc" title="${esc(desc)}">${esc(descShort)}</div></td>
+    </tr>`;
+  }).join('');
+
+  $('tableArea').innerHTML = `
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" class="sel-checkbox" onchange="PMTrade.toggleSelectAll(this)" title="全选本页"></th>
+            <th>Market</th>
+            <th>Source</th>
+            <th>赢率</th>
+            <th>Volume</th>
+            <th>Open Interest</th>
+            <th>Ends</th>
+            <th>Tags</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  $('paginationBar').style.display = totalPages > 1 ? 'flex' : 'none';
+  $('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+  $('prevBtn').disabled = currentPage === 0;
+  $('nextBtn').disabled = currentPage >= totalPages - 1;
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  PMTrade.init();
+  updateSimOrdersBadge();
+  setInterval(updateSimOrdersBadge, 15000);
+  document.addEventListener('click', (e) => {
+    if (!simOrdersPanelOpen) return;
+    const panel = $('simOrdersPanel');
+    const btn = $('simOrdersBtn');
+    if (panel?.contains(e.target) || btn?.contains(e.target)) return;
+    closeSimOrdersPanel();
+  });
+  loadAll();
+});
+
+</script>
+</body>
+</html>

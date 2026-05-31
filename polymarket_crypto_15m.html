@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加密 15分钟 · Polymarket</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<link rel="stylesheet" href="polymarket-markets-shared.css?v=20260605n">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="brand">
+      <div class="brand-icon brand-icon-15m">15M</div>
+      <div>
+        <div class="brand-title">Polymarket Markets</div>
+        <div class="brand-sub">CLOB 订单簿 · polymarket.com/crypto/15M</div>
+      </div>
+    </div>
+    <nav class="topbar-nav" aria-label="页面切换">
+      <a class="topbar-tab" href="polymarket_active_markets.html">全部市场</a>
+      <a class="topbar-tab" href="polymarket_crypto_5m.html">加密 5分钟</a>
+      <a class="topbar-tab on" href="polymarket_crypto_15m.html">加密 15分钟</a>
+      <a class="topbar-tab" href="polymarket_traders.html">交易列表</a>
+    </nav>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText" style="font-size:12px;color:#6b7280">就绪</span>
+    <button class="btn btn-wallet" id="walletBtn" type="button" onclick="PMTrade.toggleWallet()">钱包 / 交易</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="Crypto15M.loadAll()">刷新</button>
+  </div>
+</div>
+
+<div class="wallet-panel">
+  <div class="wallet-panel-inner" id="walletPanel">
+    <div class="wp-grid">
+      <div class="wp-field">
+        <span class="wp-label">私钥（下单 EIP-712 签名）</span>
+        <input class="wp-input" id="pkInput" type="text" placeholder="0x... 本地保存">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Key</span>
+        <input class="wp-input" id="apiKeyInput" type="text" placeholder="CLOB L2">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Secret</span>
+        <input class="wp-input" id="apiSecretInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">API Passphrase</span>
+        <input class="wp-input" id="apiPassInput" type="text">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">代理钱包 (Funder)</span>
+        <input class="wp-input" id="funderInput" type="text" placeholder="Polymarket 代理地址">
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">签名类型</span>
+        <select class="wp-input" id="sigTypeSelect">
+          <option value="0">0 - EOA</option>
+          <option value="1" selected>1 - POLY_PROXY</option>
+          <option value="2">2 - MetaMask / Gnosis</option>
+        </select>
+      </div>
+      <div class="wp-field">
+        <span class="wp-label">每单金额</span>
+        <span class="wp-input" style="max-width:100px;display:inline-flex;align-items:center;background:#f3f4f6;color:#374151" title="15M 页固定 $1 市价 FOK">固定 $1</span>
+      </div>
+    </div>
+    <div class="wp-actions">
+      <button class="btn btn-primary" type="button" onclick="PMTrade.connectWallet()">保存并连接</button>
+      <button class="btn" type="button" onclick="PMTrade.connectMetaMask()">MetaMask</button>
+      <button class="btn" type="button" onclick="PMTrade.deriveApiKey()">获取 API Key</button>
+      <button class="btn" type="button" onclick="PMTrade.fetchProxyAddress()">获取代理地址</button>
+      <span id="walletStatus" style="font-size:12px;color:#6b7280">未连接</span>
+      <span id="walletAddr" class="wp-addr" style="display:none"></span>
+      <span id="funderAddr" class="wp-addr" style="display:none"></span>
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Crypto · 15 Minute</h1>
+  <p>当前时间槽 Up/Down 市场 · 订单簿中间价每 5s 刷新 · 标题旁为当前槽倒计时 · 下单为 CLOB 市价 FOK（固定每单 $1）</p>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">Active 15M Events</div>
+    <div class="stat-value" id="statCount">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Volume</div>
+    <div class="stat-value" id="statVolume">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Open Interest</div>
+    <div class="stat-value" id="statOI">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">24h Volume</div>
+    <div class="stat-value" id="statVol24">—</div>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-panel">
+    <div class="filter-title">
+      <span>筛选条件</span>
+      <button class="btn" type="button" onclick="Crypto15M.resetFilters()">重置</button>
+    </div>
+    <div class="filter-rows">
+      <div class="filter-row">
+        <span class="filter-label">结束时间</span>
+        <div class="filter-chip on" data-end="0" onclick="Crypto15M.setEndFilter(0,this)">不限</div>
+        <div class="filter-chip" data-end="1" onclick="Crypto15M.setEndFilter(1,this)">1小时内</div>
+        <div class="filter-chip" data-end="3" onclick="Crypto15M.setEndFilter(3,this)">3小时内</div>
+        <div class="filter-chip" data-end="6" onclick="Crypto15M.setEndFilter(6,this)">6小时内</div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">赢率 %</span>
+        <input class="filter-input" id="probMin" type="number" min="0" max="100" placeholder="最低" oninput="Crypto15M.onSearch()">
+        <span class="filter-sep">—</span>
+        <input class="filter-input" id="probMax" type="number" min="0" max="100" placeholder="最高" oninput="Crypto15M.onSearch()">
+        <div class="filter-chip" onclick="Crypto15M.setProbPreset(30,70)">30–70%</div>
+        <div class="filter-chip" onclick="Crypto15M.setProbPreset(70,100)">&gt;70%</div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">交易量</span>
+        <select class="sort-select" id="volType" onchange="Crypto15M.onSearch()">
+          <option value="total">总交易量</option>
+          <option value="24h">24h 交易量</option>
+        </select>
+        <span class="filter-sep">≥</span>
+        <select class="sort-select" id="minVol" onchange="Crypto15M.onSearch()">
+          <option value="0">不限</option>
+          <option value="1000">$1K</option>
+          <option value="10000">$10K</option>
+          <option value="100000">$100K</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span>🔍</span>
+    <input type="text" id="searchInput" placeholder="搜索 BTC、ETH…" oninput="Crypto15M.onSearch()">
+  </div>
+  <span class="chip on">15M</span>
+  <span class="chip on">订单簿</span>
+  <select class="sort-select" id="pageSizeSelect" onchange="Crypto15M.applyFilterAndRender()">
+    <option value="25">25 / page</option>
+    <option value="50" selected>50 / page</option>
+    <option value="100">100 / page</option>
+  </select>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="panel-hd">
+      <div class="panel-title-row">
+        <h2>15M Markets</h2>
+        <span id="slotCountdown" class="crypto-countdown crypto-countdown-heading" data-end="" title="当前 15 分钟时间槽剩余">--:--</span>
+      </div>
+      <div class="panel-hd-right">
+        <span id="virtualBankrollLabel" class="virtual-bankroll" hidden title="虚拟投注余额；虚拟订单面板可重置" ondblclick="Crypto15M.resetVirtualAll()">虚拟余额 —</span>
+        <button class="btn btn-virtual-list" id="virtualOrdersBtn" type="button" hidden onclick="Crypto15M.toggleVirtualOrdersPanel()" title="查看虚拟投注订单列表">虚拟订单 <span class="vo-badge" id="virtualOrdersBadge">0</span></button>
+        <button class="btn btn-virtual" id="virtualBetToggleBtn" type="button" onclick="Crypto15M.toggleVirtualBet()" title="共识90虚拟模拟（≥2个90¢同边；70–98¢各$5）">虚拟投注：关</button>
+        <input type="checkbox" id="virtualBetEnabled" hidden aria-hidden="true">
+        <span id="resultLabel">Loading...</span>
+      </div>
+    </div>
+    <div id="virtualOrdersPanel" class="virtual-orders-panel virtual-orders-panel--aux-off" aria-hidden="true">
+      <div class="virtual-orders-panel-hd">
+        <strong>虚拟订单</strong>
+        <div class="virtual-orders-panel-actions">
+          <button class="btn btn-virtual-reset" type="button" onclick="Crypto15M.resetVirtualAll()" title="清空虚拟订单并重置余额">重置</button>
+          <button class="btn" type="button" onclick="Crypto15M.downloadVirtualOrdersCsv()" title="下载全部虚拟订单 CSV">下载</button>
+          <button class="btn" type="button" onclick="Crypto15M.refreshVirtualOrdersPanel()">刷新</button>
+          <button class="btn" type="button" onclick="Crypto15M.toggleVirtualOrdersPanel()" aria-label="关闭">✕</button>
+        </div>
+      </div>
+      <div id="virtualOrdersBody" class="virtual-orders-body">
+        <div class="vo-empty">暂无记录</div>
+      </div>
+    </div>
+    <div id="tableArea">
+      <div class="loading"><div class="spin"></div>正在加载 15M 市场...<br><small style="color:#9ca3af;margin-top:8px;display:block">请用 start-markets.bat 启动本地服务</small></div>
+    </div>
+    <div class="footer-bar" id="paginationBar" style="display:none">
+      <div class="page-info" id="pageInfo"></div>
+      <div class="page-btns">
+        <button class="btn" id="prevBtn" onclick="Crypto15M.changePage(-1)">Previous</button>
+        <button class="btn" id="nextBtn" onclick="Crypto15M.changePage(1)">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="api-note">
+  Data: <code>GET /api/crypto-page/15M</code> + CLOB 订单簿 · 下单为<strong>市价 FOK</strong>（固定每单 $1；约 2% 滑点保护），Up/Down 分列市价买入；批量同样每笔 $1
+  · <a href="https://polymarket.com/crypto/15M" target="_blank" rel="noopener">官网 15M 页</a>
+</p>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="batch-bar" id="batchBar">
+  <span>已选 <b id="batchCount">0</b> 个市场</span>
+  <span class="filter-sep">市价 FOK（每笔 $1）</span>
+  <button class="btn btn-primary" type="button" onclick="PMTrade.batchOrder('BUY')">批量买入</button>
+  <button class="btn btn-primary" type="button" onclick="PMTrade.batchOrderBySide('up')">批量买 Up</button>
+  <button class="btn btn-primary" type="button" onclick="PMTrade.batchOrderBySide('down')" style="background:#7f1d1d">批量买 Down</button>
+  <button class="btn" type="button" onclick="PMTrade.batchOrder('SELL')" style="color:#dc2626">批量卖出</button>
+  <button class="btn" type="button" onclick="PMTrade.clearSelection()">清除选择</button>
+</div>
+
+<script src="polymarket-trading.js?v=20260606a"></script>
+<script src="polymarket-auto-schedule.js?v=20260529g"></script>
+<script src="polymarket-my-orders.js?v=20260527d"></script>
+<script src="polymarket-crypto-short.js?v=20260605o"></script>
+<script src="polymarket-crypto-15m.js?v=20260605o"></script>
+</body>
+</html>
