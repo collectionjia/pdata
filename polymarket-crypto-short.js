@@ -414,7 +414,7 @@
     async function appendSlotResultLog(slotTs) {
       if (!slotResultLog || !slotTs) return;
       if (!global.location?.protocol?.startsWith('http')) {
-        console.warn('[slot log] 需通过 http://localhost:3457 打开才能写入 txt');
+        console.warn('[slot log] 需通过 http://localhost:3458 打开才能写入 txt');
         return;
       }
       const text = buildSlotResultLogText(slotTs);
@@ -3253,7 +3253,7 @@
         const pageName =
           intervalKey === '5M' ? 'polymarket_crypto_5m.html' : 'polymarket_crypto_15m.html';
         const hint = viaFile
-          ? `<br><br><b>请用本地服务打开：</b>双击 <code>start-markets.bat</code>，再访问 <code>http://localhost:3457/${pageName}</code>`
+          ? `<br><br><b>请用本地服务打开：</b>双击 <code>start-markets.bat</code>，再访问 <code>http://localhost:3458/${pageName}</code>`
           : events.length === 0
             ? '<br><br>当前时间槽可能尚未在 Gamma 上架，请稍后点「刷新」；若持续为空，请确认能访问 gamma-api.polymarket.com'
             : '';
@@ -3387,7 +3387,7 @@
         console.error(e);
         setStatus('', '加载失败');
         const hint = !global.location?.protocol?.startsWith('http')
-          ? '<br><br>请用 <code>start-markets.bat</code> 启动后通过 http://localhost:3457 打开'
+          ? '<br><br>请用 <code>start-markets.bat</code> 启动后通过 http://localhost:3458 打开'
           : '';
         $('tableArea').innerHTML = `<div class="err"><strong>加载失败</strong><br>${esc(e.message)}${hint}</div>`;
       } finally {

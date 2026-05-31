@@ -4,10 +4,10 @@ services:
     container_name: polymarket-markets
     restart: unless-stopped
     ports:
-      # 当前运行中的镜像监听 3457；rebuild 后若日志显示 PORT=9004 可改为 "0.0.0.0:9004:9004"
-      - "0.0.0.0:9004:3457"
+      # 应用在容器内监听 3458
+      - "0.0.0.0:9004:3458"
     environment:
-      PORT: "3457"
+      PORT: "3458"
       HOST: "0.0.0.0"
       DATA_DIR: "/data"
     volumes:

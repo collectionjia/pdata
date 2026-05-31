@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT) || 3457;
+const PORT = Number(process.env.PORT) || 3458;
 const HOST = process.env.HOST || '0.0.0.0';
 /** 槽结果/虚拟投注日志目录（Docker 可挂载 /data） */
 const DATA_DIR = process.env.DATA_DIR || __dirname;

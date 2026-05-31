@@ -1138,7 +1138,7 @@ async function loadAll() {
     console.error(e);
     setStatus('', '加载失败');
     const hint = location.protocol === 'file:'
-      ? '<br><br><b>请用本地服务打开（不要双击 HTML）：</b><br>双击 <code>start-markets.bat</code><br>或运行 <code>node markets-server.mjs</code><br>然后访问 <code>http://localhost:3457/polymarket_active_markets.html</code>'
+      ? '<br><br><b>请用本地服务打开（不要双击 HTML）：</b><br>双击 <code>start-markets.bat</code><br>或运行 <code>node markets-server.mjs</code><br>然后访问 <code>http://localhost:3458/polymarket_active_markets.html</code>'
       : '<br><br>请检查网络能否访问 gamma-api.polymarket.com，或重新运行 node markets-server.mjs';
     $('tableArea').innerHTML = `<div class="err"><strong>加载失败</strong><br>${esc(e.message)}${hint}</div>`;
   } finally {

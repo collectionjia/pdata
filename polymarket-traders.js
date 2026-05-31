@@ -28,7 +28,7 @@
 
   const SIDE_ZH = { BUY: '买入', SELL: '卖出' };
 
-  const MARKETS_PORT = '3457';
+  const MARKETS_PORT = '3458';
   const DATA_API_ORIGIN = 'https://data-api.polymarket.com';
   const ADV_FILTER_COLLAPSE_KEY = 'pm_traders_adv_filter_collapsed';
 
@@ -57,7 +57,7 @@
     filterBounds: {},
   };
 
-  /** 行情页本地服务；非 3457 端口打开 html 时也必须指向 markets-server */
+  /** 行情页本地服务；非 3458 端口打开 html 时也必须指向 markets-server */
   function apiBase() {
     const custom = (localStorage.getItem('pm_markets_api_base') || '').replace(/\/$/, '');
     if (custom) return custom;
@@ -965,7 +965,7 @@
       setStatus('加载失败', false);
       const err = esc(e.message || e);
       if (state.view === 'leaderboard' && $('leaderboardBody')) {
-        $('leaderboardBody').innerHTML = `<tr><td colspan="12" class="traders-empty">${err}<br><small>请用 start-markets.bat 启动本地服务后访问 http://localhost:3457/polymarket_traders.html</small></td></tr>`;
+        $('leaderboardBody').innerHTML = `<tr><td colspan="12" class="traders-empty">${err}<br><small>请用 start-markets.bat 启动本地服务后访问 http://localhost:3458/polymarket_traders.html</small></td></tr>`;
       }
       if (state.view === 'trades' && $('tradesBody')) {
         $('tradesBody').innerHTML = `<tr><td colspan="7" class="traders-empty">${err}</td></tr>`;

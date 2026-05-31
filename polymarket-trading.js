@@ -733,7 +733,7 @@
     if (global.location?.protocol?.startsWith('http')) {
       bases.push(`${global.location.protocol}//${global.location.host}`);
     }
-    if (!bases.includes('http://localhost:3457')) bases.push('http://localhost:3457');
+    if (!bases.includes('http://localhost:3458')) bases.push('http://localhost:3458');
     for (const base of bases) {
       try {
         const pr = await fetch(`${base}/api/clob/price?${q}`);
@@ -765,7 +765,7 @@
     if (global.location?.protocol?.startsWith('http')) {
       bases.push(`${global.location.protocol}//${global.location.host}`);
     }
-    if (!bases.includes('http://localhost:3457')) bases.push('http://localhost:3457');
+    if (!bases.includes('http://localhost:3458')) bases.push('http://localhost:3458');
     for (const base of bases) {
       try {
         const r = await fetch(`${base}/api/clob/book?${q}`);
@@ -1038,7 +1038,7 @@
       throw new Error('未加载 polymarket-ctf-relay.js，请刷新页面');
     }
     if (!global.location?.protocol?.startsWith('http')) {
-      throw new Error('Split 需通过 http://localhost:3457 打开（本地服务代理 Relayer）');
+      throw new Error('Split 需通过 http://localhost:3458 打开（本地服务代理 Relayer）');
     }
     return global.PMCtfRelay.executeCtfSplit({
       privateKey: walletState.pk,
